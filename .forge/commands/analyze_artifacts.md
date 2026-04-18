@@ -1,10 +1,10 @@
 ---
 name: analyze_artifacts
-description: "Uses DuckDB to run SQL queries against the extracted file metadata to find forensic anomalies."
+description: "Use DuckDB to run SQL queries against the extracted file metadata to find forensic anomalies."
 --- 
 
 # Command: Analyze Artifacts
-# Description: Uses DuckDB to run SQL queries against the extracted file metadata to find forensic anomalies.
+# Description: Use DuckDB to run SQL queries against the extracted file metadata to find forensic anomalies.
 
 ## Prerequisites
 - `scratch/file_metadata.parquet` must have been generated.
@@ -19,7 +19,7 @@ description: "Uses DuckDB to run SQL queries against the extracted file metadata
    ```bash
    ./helpers/query_parquet.py "SELECT file_path, size, crtime FROM file_metadata WHERE file_path ILIKE '%/Temp/%.exe' ORDER BY crtime DESC LIMIT 10"
    ```
-4. Perform ad-hoc queries based on findings to follow the "leads."
+4. Perform ad-hoc queries based on findings to follow investigative leads.
 
 ## Table Schema: file_metadata
 | Column | Description |
