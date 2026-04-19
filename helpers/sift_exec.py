@@ -12,7 +12,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 import docker
-from sift_tools import get_docker_socket
+from helpers.sift_tools import get_docker_socket
 
 
 def main():
