@@ -10,9 +10,44 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 ## Core Concepts
 
 - **Container ID**: Always stored in `scratch/container_id.txt`.
-- **Evidence Mount**: Evidence is typically mounted at `/mnt/windows` inside the container.
-- **Local to Container Mapping**: The project root is mapped to `/evidence` or similar in the container (verify with `docker inspect`).
-- **Native Execution**: Prefer `docker exec` over Python wrappers for transparency and flexibility.
+- **Persistent Environment**: Aim to use a single SIFT container for the entire case.
+- **Evidence Mounts**: All evidence images should be accessible via `/evidence`. Mounted filesystems live under `/mnt/windows/<image_name>`.
+- **Local to Container Mapping**: 
+    - `./images` -> `/evidence` (Read-Only)
+    - `./scratch` -> `/scratch` (Read-Write)
+
+## Persistent Multi-Image Workflow
+
+To maintain a single container with multiple mounted images:
+
+### 1. Start/Attach to Container
+Check if a container is already running. If not, start one mounting the entire `images` directory:
+```bash
+docker run -d --name sift-case --privileged -v $(pwd)/images:/evidence -v $(pwd)/scratch:/scratch sift-volatility:latest tail -f /dev/null
+docker ps -q -f name=sift-case > scratch/container_id.txt
+```
+
+### 2. Mount New Evidence Image
+For each E01 image in the case:
+```bash
+# Define variables
+IMAGE="win7-32-nromanoff-c-drive.E01"
+CASE_NAME="nromanoff"
+
+# Create mount points
+docker exec $(cat scratch/container_id.txt) mkdir -p /mnt/ewf/$CASE_NAME /mnt/windows/$CASE_NAME
+
+# Mount E01
+docker exec $(cat scratch/container_id.txt) ewfmount /evidence/$IMAGE /mnt/ewf/$CASE_NAME
+
+# Find and mount NTFS partition (example using offset 0)
+docker exec $(cat scratch/container_id.txt) mount -t ntfs -o ro,loop,offset=0 /mnt/ewf/$CASE_NAME/ewf1 /mnt/windows/$CASE_NAME
+```
+
+### 3. Verify All Mounts
+```bash
+docker exec $(cat scratch/container_id.txt) mount | grep /mnt/windows
+```
 
 ## Common Workflows
 
@@ -23,23 +58,19 @@ docker exec $(cat scratch/container_id.txt) <command>
 ```
 
 ### 2. Registry Analysis
-If `rip.pl` (RegRipper) fails, use `regfexport` to dump hive contents:
+Use `rip.pl` (RegRipper) against specific mounted images:
 ```bash
-docker exec $(cat scratch/container_id.txt) regfexport /mnt/windows/Windows/System32/config/SOFTWARE
+docker exec $(cat scratch/container_id.txt) rip.pl -r /mnt/windows/nromanoff/Windows/System32/config/SOFTWARE -p run
 ```
 
-### 3. Calculating Hashes
-Calculate hashes for suspicious files found in the evidence:
+### 3. Memory Analysis
+Volatility 3 can be run against raw memory images in `/evidence`:
 ```bash
-docker exec $(cat scratch/container_id.txt) md5sum /mnt/windows/path/to/file.exe
+docker exec $(cat scratch/container_id.txt) vol -f /evidence/win7-32-nromanoff-memory-raw.001 windows.pslist
 ```
-
-## Reference Material
-
-- [Command Templates](references/commands.md): A library of common forensic commands.
-- [Path Mappings](references/paths.md): Understanding where your files live in both worlds.
 
 ## Troubleshooting
 
-- **Tool Not Found**: Some tools might be in `/usr/local/bin` or require full paths. Use `find /usr -name "*toolname*"` to locate them.
-- **Perl Errors**: If a Perl script (like `rip.pl`) fails with syntax errors, it may be due to container environment issues. Fall back to simpler tools like `regfexport` or `strings`.
+- **Mount Denied**: Ensure the container is started with `--privileged`.
+- **Path Issues**: Always use absolute paths within `docker exec` commands or relative paths from the container's root.
+- **EWF Mount Fails**: Check if another process is using the E01 or if the mount point is not empty.
