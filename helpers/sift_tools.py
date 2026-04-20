@@ -179,9 +179,7 @@ class SIFTOrchestrator:
             match = re.search(r"^(\d+):", line)
             if match:
                 # Signature is 3 bytes in (EB 52 90) then 'NTFS'
-                # So the 'NTFS' match starts at offset + 3? 
-                # Actually NTFS VBR starts with EB 52 90 then 4E 54 46 53 (NTFS)
-                # Grep for 'NTFS' will find it at offset 3 of the sector.
+                # So the 'NTFS' match starts at offset 3 of the sector.
                 byte_offset = int(match.group(1)) - 3
                 if byte_offset >= 0 and byte_offset % 512 == 0:
                     offsets.append(byte_offset)
@@ -190,8 +188,9 @@ class SIFTOrchestrator:
     def _validate_mount(self, mount_path):
         """Validate the mount by checking for common Windows directories."""
         output, _ = self.execute(f"ls {mount_path}")
-        common_dirs = ["Windows", "Users", "Program Files"]
-        found = [d for d in common_dirs if d in output]
+        output_lower = output.lower()
+        common_dirs = ["windows", "users", "program files", "documents and settings"]
+        found = [d for d in common_dirs if d in output_lower]
         return len(found) >= 2
 
     def stop(self):
