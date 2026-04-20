@@ -45,11 +45,12 @@ class SIFTOrchestrator:
         self.scratch_dir = os.path.join(os.getcwd(), "scratch")
         os.makedirs(self.scratch_dir, exist_ok=True)
 
-    def start_container(self, evidence_path):
-        """Start the SIFT container with the evidence mounted as read-only."""
-        abs_evidence_path = os.path.abspath(evidence_path)
-        evidence_dir = os.path.dirname(abs_evidence_path)
-        evidence_file = os.path.basename(abs_evidence_path)
+    def start_container(self, case_root=None):
+        """Start the SIFT container with the case root mounted as read-only."""
+        if case_root is None:
+            case_root = os.getcwd()
+
+        abs_case_root = os.path.abspath(case_root)
 
         # Platform check for Apple Silicon
         platform = "linux/amd64"
@@ -62,14 +63,14 @@ class SIFTOrchestrator:
                 tty=True,
                 platform=platform,
                 volumes={
-                    evidence_dir: {"bind": "/evidence", "mode": "ro"},
+                    abs_case_root: {"bind": "/cases", "mode": "ro"},
                     self.scratch_dir: {"bind": "/scratch", "mode": "rw"},
                 },
                 privileged=True,  # Needed for mounting inside container
                 command="/bin/bash",
             )
             print(f"[+] Container {self.container.id[:12]} started.")
-            return evidence_file
+            return True
         except Exception as e:
             print(f"[-] Failed to start container: {e}")
             sys.exit(1)
@@ -83,19 +84,21 @@ class SIFTOrchestrator:
         result = self.container.exec_run(command)
         return result.output.decode("utf-8"), result.exit_code
 
-    def mount_evidence(self, evidence_file):
+    def mount_evidence(self, evidence_file, case_name):
         """Mount the E01 image using ewfmount and then mount the resulting raw image."""
-        print(f"[*] Mounting evidence file: {evidence_file}")
+        evidence_basename = os.path.basename(evidence_file)
+        print(f"[*] Mounting evidence file: {evidence_file} for case: {case_name}")
 
-        # Create a unique mount point based on the evidence file name
-        case_name = os.path.splitext(evidence_file)[0]
-        mount_path = f"/mnt/windows/{case_name}"
+        # Create unique mount points
+        ewf_mount_dir = f"/mnt/ewf/{case_name}/{evidence_basename}"
+        mount_path = f"/mnt/cases/{case_name}/{evidence_basename}"
 
         # 1. Create mount points inside container
-        self.execute(f"mkdir -p /mnt/ewf/{case_name} {mount_path}")
+        self.execute(f"mkdir -p {ewf_mount_dir} {mount_path}")
 
         # 2. Use ewfmount to mount the E01
-        ewf_cmd = f"ewfmount /evidence/{evidence_file} /mnt/ewf/{case_name}"
+        # evidence_file is relative to the case root (mounted at /cases)
+        ewf_cmd = f"ewfmount /cases/{evidence_file} {ewf_mount_dir}"
         output, code = self.execute(ewf_cmd)
         if code != 0:
             print(f"[-] ewfmount failed: {output}")
@@ -104,7 +107,7 @@ class SIFTOrchestrator:
         # Brief delay for mount propagation
         time.sleep(2)
 
-        raw_image = f"/mnt/ewf/{case_name}/ewf1"
+        raw_image = f"{ewf_mount_dir}/ewf1"
 
         # 3. Discovery loop
         discovery_methods = [
@@ -117,15 +120,23 @@ class SIFTOrchestrator:
             print(f"[*] Attempting discovery via {method_name}...")
             offsets = discovery_func(raw_image)
             for offset in offsets:
-                print(f"[*] Attempting mount at offset {offset} (Method: {method_name})")
-                mount_cmd = f"mount -t ntfs -o ro,loop,offset={offset} {raw_image} {mount_path}"
+                print(
+                    f"[*] Attempting mount at offset {offset} (Method: {method_name})"
+                )
+                mount_cmd = (
+                    f"mount -t ntfs -o ro,loop,offset={offset} {raw_image} {mount_path}"
+                )
                 output, code = self.execute(mount_cmd)
                 if code == 0:
                     if self._validate_mount(mount_path):
-                        print(f"[+] Successfully mounted NTFS partition at {mount_path} using {method_name} (offset: {offset})")
+                        print(
+                            f"[+] Successfully mounted NTFS partition at {mount_path} using {method_name} (offset: {offset})"
+                        )
                         return mount_path
                     else:
-                        print(f"[*] Mount succeeded but validation failed at {mount_path}. Unmounting...")
+                        print(
+                            f"[*] Mount succeeded but validation failed at {mount_path}. Unmounting..."
+                        )
                         self.execute(f"umount {mount_path}")
 
         # Final fallback: direct mount
@@ -134,7 +145,9 @@ class SIFTOrchestrator:
         output, code = self.execute(mount_cmd)
         if code == 0:
             if self._validate_mount(mount_path):
-                print(f"[+] Successfully mounted NTFS partition directly at {mount_path}")
+                print(
+                    f"[+] Successfully mounted NTFS partition directly at {mount_path}"
+                )
                 return mount_path
             else:
                 self.execute(f"umount {mount_path}")
