@@ -33,6 +33,7 @@ To reconstruct a timeline of logons, process starts, and system changes.
 To find injected code, hidden processes, and active network connections.
 - **Artifacts**: RAM Image (Volatility 3).
 - **Guide**: [Memory Analysis](references/memory.md)
+- **STRICT RULE**: Use ONLY Volatility 3 syntax. No profiles, space-separated PIDs.
 
 ### 6. System Usage & Exfiltration
 To track data volumes, browser history, and deleted files.

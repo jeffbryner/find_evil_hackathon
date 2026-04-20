@@ -1,51 +1,65 @@
 # Memory Analysis (Volatility 3)
 
-Analyze a RAM image to find live activity and hidden threats.
+Analyze a RAM image to find live activity and hidden threats using **Volatility 3**.
 
+> **CRITICAL**: This environment uses Volatility 3. Do NOT use Volatility 2 syntax (e.g., `--profile` is NOT used).
 
 ## Tools
 
 | Tool | Binary | Purpose |
 |------|--------|---------|
-| Volatility 3 | `vol.py or just vol` | Process, network, registry, injection, and artifact extraction |
+| Volatility 3 | `vol` | Process, network, registry, injection, and artifact extraction |
 
-
+## Volatility 3 Usage Rules
+1. **Plugin Names**: Always use the full plugin name (e.g., `windows.pslist.PsList` or `windows.pslist`).
+2. **PID Filtering**: Multiple PIDs MUST be space-separated, NOT comma-separated (e.g., `--pid 123 456`).
+3. **Output Formatting**: Use `-r csv` to output results in CSV format for easier ingestion into DuckDB.
+4. **Symbol Tables**: Volatility 3 automatically handles symbols; you do not need to specify a profile.
 
 ## 1. Process Enumeration
-- **`windows.pslist`**: Walk the linked list of processes (fast, but misses hidden).
-- **`windows.psscan`**: Scan for process pool tags (finds hidden and exited processes).
-- **`windows.pstree`**: Visualize parent-child relationships.
+- **`windows.pslist.PsList`**: Walk the linked list of processes (fast, but misses hidden).
+- **`windows.psscan.PsScan`**: Scan for process pool tags (finds hidden and exited processes).
+- **`windows.pstree.PsTree`**: Visualize parent-child relationships.
 
 ```bash
-# Run psscan via docker (assuming memory image is in scratch/)
-docker exec $(cat scratch/container_id.txt) /opt/volatility3-2.20.0/vol.py \
-  -f /evidence/scratch/memdump.mem windows.psscan
+# Run psscan via docker and output to CSV
+docker exec $(cat scratch/container_id.txt) vol \
+  -f /evidence/memdump.mem -r csv windows.psscan > scratch/psscan.csv
 ```
 
 ## 2. Network Connections
-- **`windows.netscan`**: Find active and closed network connections.
+- **`windows.netscan.NetScan`**: Find active and closed network connections (TCP/UDP).
 
 ```bash
-docker exec $(cat scratch/container_id.txt) /opt/volatility3-2.20.0/vol.py \
-  -f /evidence/scratch/memdump.mem windows.netscan
+docker exec $(cat scratch/container_id.txt) vol \
+  -f /evidence/memdump.mem -r csv windows.netscan > scratch/netscan.csv
 ```
 
-## 3. Code Injection
-- **`windows.malfind`**: Find RWX memory regions that look like injected code.
+## 3. Code Injection & Malware
+- **`windows.malfind.Malfind`**: Find RWX memory regions that look like injected code.
+- **`windows.vadinfo.VadInfo`**: Detailed information about Virtual Address Descriptors.
 
 ```bash
-docker exec $(cat scratch/container_id.txt) /opt/volatility3-2.20.0/vol.py \
-  -f /evidence/scratch/memdump.mem windows.malfind --dump
+# Find injected code and dump the suspicious regions
+docker exec $(cat scratch/container_id.txt) vol \
+  -f /evidence/memdump.mem windows.malfind --dump
 ```
 
-## 4. Extraction
-- **`windows.dumpfiles`**: Extract a file from the memory cache (using virtaddr from filescan).
-- **`windows.pslist --dump`**: Dump a process executable.
-
-## 5. Memory Baselining
-Compare the image against a known-good baseline to surface anomalies.
+## 4. Extraction & Dumping
+- **`windows.dumpfiles.DumpFiles`**: Extract a file from the memory cache.
+- **`windows.pslist.PsList --dump`**: Dump a process executable.
 
 ```bash
-docker exec $(cat scratch/container_id.txt) python3 /opt/memory-baseliner/baseline.py \
-  -proc -i /evidence/scratch/memdump.mem --loadbaseline --jsonbaseline /path/to/baseline.json
+# Dump a specific process by PID (space-separated for multiple)
+docker exec $(cat scratch/container_id.txt) vol \
+  -f /evidence/memdump.mem windows.pslist --pid 1234 --dump
+```
+
+## 5. Registry in Memory
+- **`windows.registry.hivelist.HiveList`**: List registry hives in memory.
+- **`windows.registry.printkey.PrintKey`**: Print specific registry keys from memory.
+
+```bash
+docker exec $(cat scratch/container_id.txt) vol \
+  -f /evidence/memdump.mem windows.registry.printkey --key "Software\Microsoft\Windows\CurrentVersion\Run"
 ```
