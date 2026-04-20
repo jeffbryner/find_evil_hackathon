@@ -18,12 +18,12 @@ def main():
     file_name = orchestrator.start_container(evidence_path)
 
     # Mount evidence
-    success = orchestrator.mount_evidence(file_name)
+    mount_path = orchestrator.mount_evidence(file_name)
 
-    if success:
+    if mount_path:
         print("[+] Case Initialized successfully.")
         print("[+] Container ID:", orchestrator.container.id[:12])
-        print("[+] Evidence mounted at /mnt/windows within the container.")
+        print(f"[+] Evidence mounted at {mount_path} within the container.")
         # Create a simple file to track the container ID for future scripts
         with open("scratch/container_id.txt", "w") as f:
             f.write(orchestrator.container.id)

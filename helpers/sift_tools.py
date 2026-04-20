@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 import sys
+import re
 
 
 def get_docker_socket():
@@ -86,13 +87,16 @@ class SIFTOrchestrator:
         """Mount the E01 image using ewfmount and then mount the resulting raw image."""
         print(f"[*] Mounting evidence file: {evidence_file}")
 
+        # Create a unique mount point based on the evidence file name
+        case_name = os.path.splitext(evidence_file)[0]
+        mount_path = f"/mnt/windows/{case_name}"
+
         # 1. Create mount points inside container
-        self.execute("mkdir -p /mnt/ewf /mnt/windows")
+        self.execute(f"mkdir -p /mnt/ewf/{case_name} {mount_path}")
 
         # 2. Use ewfmount to mount the E01
-        ewf_cmd = f"ewfmount /evidence/{evidence_file} /mnt/ewf"
+        ewf_cmd = f"ewfmount /evidence/{evidence_file} /mnt/ewf/{case_name}"
         output, code = self.execute(ewf_cmd)
-        print(f"[*] ewfmount output: {output}")
         if code != 0:
             print(f"[-] ewfmount failed: {output}")
             return False
@@ -100,54 +104,102 @@ class SIFTOrchestrator:
         # Brief delay for mount propagation
         time.sleep(2)
 
-        # DEBUG: Check what's in /mnt/ewf
-        ls_output, _ = self.execute("ls -lh /mnt/ewf/ewf1")
-        print(f"[*] ls -lh /mnt/ewf/ewf1 output:\n{ls_output}")
+        raw_image = f"/mnt/ewf/{case_name}/ewf1"
 
-        # 3. Find the raw image (usually /mnt/ewf/ewf1)
-        # 4. Use mmls (or fdisk) to find the partition
-        mmls_output, _ = self.execute("mmls /mnt/ewf/ewf1")
-        if not mmls_output.strip():
-            print("[*] mmls returned no output, trying fdisk -l...")
-            mmls_output, _ = self.execute("fdisk -l /mnt/ewf/ewf1")
+        # 3. Discovery loop
+        discovery_methods = [
+            ("mmls", self._get_ntfs_offsets_mmls),
+            ("parted", self._get_ntfs_offsets_parted),
+            ("brute-force", self._get_ntfs_offsets_bruteforce),
+        ]
 
-        print(f"[*] Partition table:\n{mmls_output}")
+        for method_name, discovery_func in discovery_methods:
+            print(f"[*] Attempting discovery via {method_name}...")
+            offsets = discovery_func(raw_image)
+            for offset in offsets:
+                print(f"[*] Attempting mount at offset {offset} (Method: {method_name})")
+                mount_cmd = f"mount -t ntfs -o ro,loop,offset={offset} {raw_image} {mount_path}"
+                output, code = self.execute(mount_cmd)
+                if code == 0:
+                    if self._validate_mount(mount_path):
+                        print(f"[+] Successfully mounted NTFS partition at {mount_path} using {method_name} (offset: {offset})")
+                        return mount_path
+                    else:
+                        print(f"[*] Mount succeeded but validation failed at {mount_path}. Unmounting...")
+                        self.execute(f"umount {mount_path}")
 
-        # Basic heuristic: find the partition with 'NTFS' or the one starting at a common offset
-        # For this POC, we'll try to mount the partition directly if we know the offset or use a simple grep
-        # A more robust approach would parse mmls output.
-
-        # Try to find the start sector of the NTFS partition
-        import re
-
-        match = re.search(r"(\d+)\s+.*NTFS", mmls_output)
-        if match:
-            start_sector = match.group(1)
-            offset = int(start_sector) * 512
-            mount_cmd = (
-                f"mount -t ntfs -o ro,loop,offset={offset} /mnt/ewf/ewf1 /mnt/windows"
-            )
-            output, code = self.execute(mount_cmd)
-            if code == 0:
-                print("[+] Windows partition mounted at /mnt/windows")
-                return True
+        # Final fallback: direct mount
+        print("[*] All offset-based discovery failed. Trying direct mount...")
+        mount_cmd = f"mount -t ntfs -o ro,loop {raw_image} {mount_path}"
+        output, code = self.execute(mount_cmd)
+        if code == 0:
+            if self._validate_mount(mount_path):
+                print(f"[+] Successfully mounted NTFS partition directly at {mount_path}")
+                return mount_path
             else:
-                print(f"[-] mount failed: {output}")
-        else:
-            print("[*] Could not find NTFS partition in output. Trying direct mount...")
-            mount_cmd = "mount -t ntfs -o ro,loop /mnt/ewf/ewf1 /mnt/windows"
-            output, code = self.execute(mount_cmd)
-            if code == 0:
-                print("[+] Windows partition mounted directly at /mnt/windows")
-                return True
-            else:
-                print(f"[-] Direct mount failed: {output}")
+                self.execute(f"umount {mount_path}")
 
         return False
+
+    def _get_ntfs_offsets_mmls(self, raw_image):
+        """Find NTFS offsets using mmls."""
+        output, _ = self.execute(f"mmls {raw_image}")
+        offsets = []
+        for line in output.splitlines():
+            if "NTFS" in line:
+                match = re.search(r"(\d+)\s+.*NTFS", line)
+                if match:
+                    offsets.append(int(match.group(1)) * 512)
+        return offsets
+
+    def _get_ntfs_offsets_parted(self, raw_image):
+        """Find NTFS offsets using parted."""
+        output, _ = self.execute(f"parted -s {raw_image} unit b print")
+        offsets = []
+        for line in output.splitlines():
+            if "ntfs" in line.lower():
+                # parted output format: Number  Start  End  Size  File system  Name  Flags
+                # Example: 1      1048576B  25578255359B  25577206784B  ntfs          boot
+                match = re.search(r"^\s*\d+\s+(\d+)B", line)
+                if match:
+                    offsets.append(int(match.group(1)))
+        return offsets
+
+    def _get_ntfs_offsets_bruteforce(self, raw_image):
+        """Brute-force scan for NTFS headers in the first 1GB."""
+        # We look for the NTFS signature 'NTFS    ' (EB 52 90 4E 54 46 53 20)
+        # We'll use grep on the raw image to find the offset of 'NTFS'
+        # Since we are in a container, we can use 'grep -a -b -o'
+        # But grep offset is byte-level.
+        cmd = f"head -c 1G {raw_image} | grep -a -b -o 'NTFS    ' | head -n 5"
+        output, _ = self.execute(cmd)
+        offsets = []
+        for line in output.splitlines():
+            # Format is offset:match
+            match = re.search(r"^(\d+):", line)
+            if match:
+                # Signature is 3 bytes in (EB 52 90) then 'NTFS'
+                # So the 'NTFS' match starts at offset + 3? 
+                # Actually NTFS VBR starts with EB 52 90 then 4E 54 46 53 (NTFS)
+                # Grep for 'NTFS' will find it at offset 3 of the sector.
+                byte_offset = int(match.group(1)) - 3
+                if byte_offset >= 0 and byte_offset % 512 == 0:
+                    offsets.append(byte_offset)
+        return offsets
+
+    def _validate_mount(self, mount_path):
+        """Validate the mount by checking for common Windows directories."""
+        output, _ = self.execute(f"ls {mount_path}")
+        common_dirs = ["Windows", "Users", "Program Files"]
+        found = [d for d in common_dirs if d in output]
+        return len(found) >= 2
 
     def stop(self):
         if self.container:
             print(f"[*] Stopping container {self.container.id[:12]}...")
+            # Try to unmount everything first
+            self.execute("umount -a -t ntfs")
+            self.execute("umount -a -t fuse.ewf")
             self.container.stop()
             self.container.remove()
             print("[+] Container removed.")
