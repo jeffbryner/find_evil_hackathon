@@ -36,7 +36,7 @@ docker exec $(cat scratch/container_id.txt) vol \
 ```
 
 ## 3. Code Injection & Malware
-- **`windows.malfind.Malfind`**: Find RWX memory regions that look like injected code.
+- **`windows.malware.malfind.Malfind`**: Find RWX memory regions that look like injected code.
 - **`windows.vadinfo.VadInfo`**: Detailed information about Virtual Address Descriptors.
 
 ```bash
