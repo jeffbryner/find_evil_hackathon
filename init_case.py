@@ -14,14 +14,9 @@ def main():
     parser.add_argument(
         "evidence", nargs="+", help="Path(s) to the evidence images (e.g., E01 files)"
     )
-    parser.add_argument(
-        "--triage", action="store_true", help="Automatically run triage after mounting"
-    )
-
     args = parser.parse_args()
     case_name = args.case
     evidence_paths = args.evidence
-    triage = args.triage
 
     orchestrator = SIFTOrchestrator()
 
@@ -60,14 +55,6 @@ def main():
             mounted_paths.append(mount_path)
         else:
             print(f"[-] Failed to mount {evidence_path}")
-
-    if mounted_paths and triage:
-        print("[*] Running automated triage...")
-        for mount_path in mounted_paths:
-            extractor = TriageExtractor(
-                orchestrator, orchestrator.container.id, mount_path
-            )
-            extractor.run_triage()
 
 
 if __name__ == "__main__":
