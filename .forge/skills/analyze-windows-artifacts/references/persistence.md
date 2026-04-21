@@ -2,25 +2,26 @@
 
 Identify how the attacker maintains access across reboots.
 
-## 1. Registry Run Keys
-**Locations**:
-- `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`
-- `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
+## 1. Registry Artifacts (Automated)
+**Artifacts**: Run Keys, Services, UserAssist, ShimCache.
+
+The `triage_extractor.py` script automatically parses these persistence mechanisms into a unified Parquet timeline (`artifacts_timeline.parquet`).
 
 ```bash
-# Check Software Hive
-docker exec $(cat scratch/container_id.txt) regfexport /mnt/windows/Windows/System32/config/SOFTWARE \
-  -K "Microsoft\Windows\CurrentVersion\Run"
+# Manual extraction via Plaso inside the container if needed:
+docker exec $(cat scratch/container_id.txt) log2timeline.py \
+  --artifact_filters 'WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache' \
+  --storage_file /scratch/case/evidence/persistence.plaso \
+  /mnt/cases/case/evidence
 ```
 
-## 2. Windows Services
-**Location**: `SYSTEM` hive -> `CurrentControlSet\Services`
-**Value**: Look for unsigned drivers or services with suspicious image paths (e.g., `%TEMP%`).
+## 2. Manual Registry Inspection
+If specific keys are needed beyond the automated triage:
 
 ```bash
-# Export services for analysis
-docker exec $(cat scratch/container_id.txt) regfexport /mnt/windows/Windows/System32/config/SYSTEM \
-  -K "ControlSet001\Services"
+# Export specific key via regfexport
+docker exec $(cat scratch/container_id.txt) regfexport /mnt/cases/case/evidence/Windows/System32/config/SOFTWARE \
+  -K "Microsoft\Windows\CurrentVersion\Run"
 ```
 
 ## 3. Scheduled Tasks

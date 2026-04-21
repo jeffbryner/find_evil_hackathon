@@ -10,8 +10,13 @@ class TriageExtractor:
         self.orchestrator = orchestrator
         self.container_id = container_id
         self.mount_path = mount_path
-        self.case_name = os.path.basename(mount_path)
-        self.scratch_dir = os.path.join(os.getcwd(), "scratch", self.case_name)
+        # mount_path is /mnt/cases/<case_name>/<evidence_name>
+        parts = self.mount_path.split("/")
+        self.real_case_name = parts[-2]
+        self.evidence_name = parts[-1]
+        self.scratch_dir = os.path.join(
+            os.getcwd(), "scratch", self.real_case_name, self.evidence_name
+        )
         os.makedirs(self.scratch_dir, exist_ok=True)
         self.parquet_dir = os.path.join(self.scratch_dir, "parquet")
         os.makedirs(self.parquet_dir, exist_ok=True)
@@ -37,7 +42,7 @@ class TriageExtractor:
 
     def run_triage(self):
         """Run the triage process based on the detected OS."""
-        print(f"[*] Starting triage for {self.case_name} ({self.os_type})...")
+        print(f"[*] Starting triage for {self.evidence_name} ({self.os_type})...")
 
         # 1. Generic Filesystem Timeline (Works for all OS)
         self._extract_fs_timeline()
@@ -55,69 +60,62 @@ class TriageExtractor:
         """Extract filesystem timeline using fls and mactime."""
         print("[*] Extracting filesystem timeline...")
 
-        # mount_path is /mnt/cases/<case_name>/<evidence_name>
-        # case_name is from basename(mount_path) which is evidence_name? Wait.
-        # Let's fix case_name detection in __init__
+        raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
 
-        # Note: We need the raw image path for fls.
-        # It's at /mnt/ewf/<case_name>/<evidence_name>/ewf1
-        # But self.case_name currently is basename(mount_path) which is evidence_name.
-
-        # We need the real case name.
-        parts = self.mount_path.split("/")
-        real_case_name = parts[-2]
-        evidence_name = parts[-1]
-
-        raw_image = f"/mnt/ewf/{real_case_name}/{evidence_name}/ewf1"
-
-        cmd = f"bash -c 'mkdir -p /scratch/{real_case_name}/{evidence_name} && fls -r -m / {raw_image} > /scratch/{real_case_name}/{evidence_name}/bodyfile.txt'"
+        cmd = f"bash -c 'mkdir -p /scratch/{self.real_case_name}/{self.evidence_name} && fls -r -m / {raw_image} > /scratch/{self.real_case_name}/{self.evidence_name}/bodyfile.txt'"
         self.orchestrator.execute(cmd)
 
-        cmd = f"bash -c 'mactime -b /scratch/{real_case_name}/{evidence_name}/bodyfile.txt -z UTC -d > /scratch/{real_case_name}/{evidence_name}/fs_timeline.csv'"
+        cmd = f"bash -c 'mactime -b /scratch/{self.real_case_name}/{self.evidence_name}/bodyfile.txt -z UTC -d > /scratch/{self.real_case_name}/{self.evidence_name}/fs_timeline.csv'"
         self.orchestrator.execute(cmd)
 
     def _extract_windows_artifacts(self):
-        parts = self.mount_path.split("/")
-        real_case_name = parts[-2]
-        evidence_name = parts[-1]
-        """Extract Windows-specific artifacts (Registry, EVTX, MFT)."""
+        """Extract Windows-specific artifacts (Registry, EVTX, MFT) into a unified timeline."""
         print("[*] Extracting Windows artifacts...")
 
-        # Registry
-        reg_dir = os.path.join(self.scratch_dir, "registry")
-        os.makedirs(reg_dir, exist_ok=True)
-        self.orchestrator.execute(
-            f"mkdir -p /scratch/{real_case_name}/{evidence_name}/registry"
+        # Paths for Plaso
+        plaso_storage = (
+            f"/scratch/{self.real_case_name}/{self.evidence_name}/artifacts.plaso"
+        )
+        jsonl_output = (
+            f"/scratch/{self.real_case_name}/{self.evidence_name}/artifacts.jsonl"
         )
 
-        hives = ["SYSTEM", "SOFTWARE", "SAM", "SECURITY"]
-        for hive in hives:
-            self.orchestrator.execute(
-                f"bash -c 'cp {self.mount_path}/Windows/System32/config/{hive} /scratch/{real_case_name}/{evidence_name}/registry/ 2>/dev/null || true'"
-            )
+        # 1. Targeted Registry Artifacts
+        print(
+            "[*] Parsing targeted Registry artifacts (RunKeys, Services, UserAssist, ShimCache)..."
+        )
+        reg_artifacts = (
+            "WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache"
+        )
+        cmd = f"log2timeline.py --artifact_filters '{reg_artifacts}' --storage_file {plaso_storage} {self.mount_path}"
+        self.orchestrator.execute(cmd)
 
-        # User Registry Hives
-        print("[*] Extracting user registry hives...")
-        self.orchestrator.execute(
-            f"bash -c \"find {self.mount_path}/Users -name 'NTUSER.DAT' -exec cp --parents {{}} /scratch/{real_case_name}/{evidence_name}/registry/ \\;\""
-        )
-        self.orchestrator.execute(
-            f"bash -c \"find {self.mount_path}/Users -name 'UsrClass.dat' -exec cp --parents {{}} /scratch/{real_case_name}/{evidence_name}/registry/ \\;\""
-        )
+        # 2. Targeted Event Logs
+        # Discover Event Log location (XP vs Win7+)
+        evtx_paths = [
+            f"{self.mount_path}/Windows/System32/winevt/Logs/Security.evtx",
+            f"{self.mount_path}/Windows/System32/winevt/Logs/System.evtx",
+            f"{self.mount_path}/WINDOWS/system32/config/SecEvent.Evt",
+            f"{self.mount_path}/WINDOWS/system32/config/SysEvent.Evt",
+        ]
 
-        # Event Logs
-        evtx_dir = os.path.join(self.scratch_dir, "evtx")
-        os.makedirs(evtx_dir, exist_ok=True)
-        self.orchestrator.execute(
-            f"mkdir -p /scratch/{real_case_name}/{evidence_name}/evtx"
-        )
-        self.orchestrator.execute(
-            f"bash -c \"find {self.mount_path}/Windows/System32/winevt/Logs/ -name '*.evtx' -exec cp {{}} /scratch/{real_case_name}/{evidence_name}/evtx/ \\;\""
-        )
+        for evtx_path in evtx_paths:
+            # Check if file exists inside container
+            output, code = self.orchestrator.execute(f"ls {evtx_path}")
+            if code == 0:
+                print(f"[*] Parsing Event Log: {evtx_path}")
+                # Append to the same Plaso storage
+                cmd = f"log2timeline.py --parsers 'winevtx,winevt' --storage_file {plaso_storage} {evtx_path}"
+                self.orchestrator.execute(cmd)
+
+        # 3. Export to JSONL for DuckDB ingestion
+        print("[*] Exporting unified artifacts to JSONL...")
+        cmd = f"psort.py -o json_line -w {jsonl_output} {plaso_storage}"
+        self.orchestrator.execute(cmd)
 
         # MFT
         print("[*] Extracting MFT...")
-        raw_image = f"/mnt/ewf/{real_case_name}/{evidence_name}/ewf1"
+        raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
         # We need to find the offset again or use the one from mount
         output, _ = self.orchestrator.execute("mount")
         offset = 0
@@ -129,23 +127,20 @@ class TriageExtractor:
 
         if offset > 0:
             self.orchestrator.execute(
-                f"bash -c 'icat -o {offset} {raw_image} 0 > /scratch/{real_case_name}/{evidence_name}/MFT'"
+                f"bash -c 'icat -o {offset} {raw_image} 0 > /scratch/{self.real_case_name}/{self.evidence_name}/MFT'"
             )
         else:
             self.orchestrator.execute(
-                f"bash -c 'icat {raw_image} 0 > /scratch/{real_case_name}/{evidence_name}/MFT'"
+                f"bash -c 'icat {raw_image} 0 > /scratch/{self.real_case_name}/{self.evidence_name}/MFT'"
             )
 
     def _extract_linux_artifacts(self):
         """Extract Linux-specific artifacts."""
-        parts = self.mount_path.split("/")
-        real_case_name = parts[-2]
-        evidence_name = parts[-1]
         print("[*] Extracting Linux artifacts...")
         linux_dir = os.path.join(self.scratch_dir, "linux")
         os.makedirs(linux_dir, exist_ok=True)
         self.orchestrator.execute(
-            f"mkdir -p /scratch/{real_case_name}/{evidence_name}/linux"
+            f"mkdir -p /scratch/{self.real_case_name}/{self.evidence_name}/linux"
         )
 
         files = [
@@ -157,21 +152,20 @@ class TriageExtractor:
         ]
         for f in files:
             self.orchestrator.execute(
-                f"cp {self.mount_path}{f} /scratch/{real_case_name}/{evidence_name}/linux/ 2>/dev/null || true"
+                f"cp {self.mount_path}{f} /scratch/{self.real_case_name}/{self.evidence_name}/linux/ 2>/dev/null || true"
             )
 
     def _convert_to_parquet(self):
-        """Convert all CSV files in the scratch directory to Parquet using DuckDB."""
+        """Convert all extracted artifacts (CSV and JSONL) to Parquet using DuckDB."""
         print("[*] Converting extracted artifacts to Parquet...")
         con = duckdb.connect()
 
-        # 1. Timeline
+        # 1. FS Timeline (CSV)
         timeline_csv = os.path.join(self.scratch_dir, "fs_timeline.csv")
         if os.path.exists(timeline_csv):
             parquet_path = os.path.join(self.parquet_dir, "fs_timeline.parquet")
             print(f"[*] Converting fs_timeline.csv to Parquet...")
             try:
-                # mactime CSV format: Date,Size,Type,Mode,UID,GID,Meta,File Name
                 con.execute(
                     f"COPY (SELECT * FROM read_csv_auto('{timeline_csv}', ignore_errors=true)) TO '{parquet_path}' (FORMAT PARQUET)"
                 )
@@ -179,7 +173,21 @@ class TriageExtractor:
             except Exception as e:
                 print(f"[-] Failed to convert timeline: {e}")
 
-        # 2. Other CSVs (if any)
+        # 2. Unified Artifacts (JSONL from Plaso)
+        artifacts_jsonl = os.path.join(self.scratch_dir, "artifacts.jsonl")
+        if os.path.exists(artifacts_jsonl):
+            parquet_path = os.path.join(self.parquet_dir, "artifacts_timeline.parquet")
+            print(f"[*] Converting artifacts.jsonl to Parquet...")
+            try:
+                # Use read_json_auto for JSONL
+                con.execute(
+                    f"COPY (SELECT * FROM read_json_auto('{artifacts_jsonl}')) TO '{parquet_path}' (FORMAT PARQUET)"
+                )
+                print(f"[+] Created {parquet_path}")
+            except Exception as e:
+                print(f"[-] Failed to convert unified artifacts: {e}")
+
+        # 3. Other CSVs (if any)
         for file in os.listdir(self.scratch_dir):
             if file.endswith(".csv") and file != "fs_timeline.csv":
                 csv_path = os.path.join(self.scratch_dir, file)

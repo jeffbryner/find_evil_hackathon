@@ -42,7 +42,7 @@ To track data volumes, browser history, and deleted files.
 
 ## General SIFT Workflow
 
-1. **Mount Evidence**: Use `sift-docker` skill to ensure `/mnt/windows` is ready.
-2. **Triage/Extract**: Use Sleuthkit (`fls`, `icat`) to pull hives and artifact files to `scratch/`.
-3. **Parse**: Use EZ Tools (via `dotnet /opt/zimmermantools/...`) to convert artifacts to CSV.
-4. **Analyze**: Use DuckDB (via `query_parquet.py`) or Timeline Explorer to find anomalies.
+1. **Start Environment**: Use `init_environment.py` to spin up the SIFT container.
+2. **Initialize Case**: Use `init_case.py --case <name> <images...>` to mount evidence to `/mnt/cases/<name>/<evidence>`.
+3. **Automated Triage**: Run `triage_extractor.py` (or use `--triage` flag with `init_case`) to automatically generate `fs_timeline.parquet` and `artifacts_timeline.parquet`.
+4. **Structured Analysis**: Use DuckDB (via `query_parquet.py`) to query the unified timelines across the entire case.

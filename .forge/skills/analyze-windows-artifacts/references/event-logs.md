@@ -2,15 +2,17 @@
 
 Reconstruct a timeline of system and user events.
 
-## 1. Parsing with EvtxECmd
+## 1. Parsing with Plaso (Automated)
 **Location**: `C:\Windows\System32\winevt\Logs`
 
+The `triage_extractor.py` script automatically parses `Security.evtx` and `System.evtx` into a unified Parquet timeline.
+
 ```bash
-# Parse all logs in the container
-docker exec $(cat scratch/container_id.txt) dotnet /opt/zimmermantools/EvtxeCmd/EvtxECmd.dll \
-  -d /mnt/windows/Windows/System32/winevt/Logs \
-  --csv /evidence/scratch/ \
-  --maps /opt/zimmermantools/EvtxeCmd/Maps/
+# Manual extraction via Plaso inside the container if needed:
+docker exec $(cat scratch/container_id.txt) log2timeline.py \
+  --parsers winevtx \
+  --storage_file /scratch/case/evidence/event_logs.plaso \
+  /mnt/cases/case/evidence/Windows/System32/winevt/Logs/
 ```
 
 ## 2. Critical Event IDs

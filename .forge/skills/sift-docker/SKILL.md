@@ -11,42 +11,30 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 
 - **Container ID**: Always stored in `scratch/container_id.txt`.
 - **Persistent Environment**: Aim to use a single SIFT container for the entire case.
-- **Evidence Mounts**: All evidence images should be accessible via `/evidence`. Mounted filesystems live under `/mnt/windows/<image_name>`.
+- **Evidence Mounts**: All case files are accessible via `/cases`. Mounted filesystems live under `/mnt/cases/<case_name>/<image_name>`.
 - **Local to Container Mapping**: 
-    - `./images` -> `/evidence` (Read-Only)
+    - `.` (CWD) -> `/cases` (Read-Only)
     - `./scratch` -> `/scratch` (Read-Write)
 
 ## Persistent Multi-Image Workflow
 
 To maintain a single container with multiple mounted images:
 
-### 1. Start/Attach to Container
-Check if a container is already running. If not, start one mounting the entire `images` directory:
+### 1. Start Environment
+Initialize the shared SIFT environment:
 ```bash
-docker run -d --name sift-case --privileged -v $(pwd)/images:/evidence -v $(pwd)/scratch:/scratch sift-volatility:latest tail -f /dev/null
-docker ps -q -f name=sift-case > scratch/container_id.txt
+python3 init_environment.py
 ```
 
-### 2. Mount New Evidence Image
-For each E01 image in the case:
+### 2. Initialize Case & Mount Evidence
+Associate images with a case and mount them automatically:
 ```bash
-# Define variables
-IMAGE="win7-32-nromanoff-c-drive.E01"
-CASE_NAME="nromanoff"
-
-# Create mount points
-docker exec $(cat scratch/container_id.txt) mkdir -p /mnt/ewf/$CASE_NAME /mnt/windows/$CASE_NAME
-
-# Mount E01
-docker exec $(cat scratch/container_id.txt) ewfmount /evidence/$IMAGE /mnt/ewf/$CASE_NAME
-
-# Find and mount NTFS partition (example using offset 0)
-docker exec $(cat scratch/container_id.txt) mount -t ntfs -o ro,loop,offset=0 /mnt/ewf/$CASE_NAME/ewf1 /mnt/windows/$CASE_NAME
+./helpers/init_case.sh --case <case_name> <images...>
 ```
 
 ### 3. Verify All Mounts
 ```bash
-docker exec $(cat scratch/container_id.txt) mount | grep /mnt/windows
+docker exec $(cat scratch/container_id.txt) mount | grep /mnt/cases
 ```
 
 ## Common Workflows
@@ -60,13 +48,13 @@ docker exec $(cat scratch/container_id.txt) <command>
 ### 2. Registry Analysis
 Use `rip.pl` (RegRipper) against specific mounted images:
 ```bash
-docker exec $(cat scratch/container_id.txt) rip.pl -r /mnt/windows/nromanoff/Windows/System32/config/SOFTWARE -p run
+docker exec $(cat scratch/container_id.txt) rip.pl -r /mnt/cases/<case>/<evidence>/Windows/System32/config/SOFTWARE -p run
 ```
 
 ### 3. Memory Analysis
-Volatility 3 can be run against raw memory images in `/evidence`:
+Volatility 3 can be run against raw memory images in `/cases/images/`:
 ```bash
-docker exec $(cat scratch/container_id.txt) vol -f /evidence/win7-32-nromanoff-memory-raw.001 windows.pslist
+docker exec $(cat scratch/container_id.txt) vol -f /cases/images/win7-32-nromanoff-memory-raw.001 windows.pslist
 ```
 
 ## Troubleshooting
