@@ -44,5 +44,7 @@ To track data volumes, browser history, and deleted files.
 
 1. **Start Environment**: Use `init_environment.py` to spin up the SIFT container.
 2. **Initialize Case**: Use `init_case.py --case <name> <images...>` to mount evidence to `/mnt/cases/<name>/<evidence>`.
-3. **Automated Triage**: Run `triage_extractor.py` (or use `--triage` flag with `init_case`) to automatically generate `fs_timeline.parquet` and `artifacts_timeline.parquet`.
-4. **Structured Analysis**: Use DuckDB (via `query_parquet.py`) to query the unified timelines across the entire case.
+3. **Automated Triage**: Run `python triage_extractor.py --case <name> --all --background` to start automated processing in the background.
+   - **Monitor Progress**: Use `tail -f scratch/<name>/triage.log` to check status.
+   - **Fine-grained Control**: Use `--evidence <image_name>` instead of `--all` to triage specific images.
+4. **Structured Analysis**: Use DuckDB (via `query_parquet.py`) to query the unified timelines (e.g., `fs_timeline.parquet`, `artifacts_timeline.parquet`) across the entire case.
