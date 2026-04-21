@@ -87,6 +87,14 @@ class SIFTOrchestrator:
     def mount_evidence(self, evidence_file, case_name):
         """Mount the E01 image using ewfmount and then mount the resulting raw image."""
         evidence_basename = os.path.basename(evidence_file)
+
+        # Safeguard: Do not attempt to mount memory images as disk images
+        if "memory" in evidence_basename.lower():
+            print(
+                f"[!] Skipping mount for {evidence_basename}: Memory images should be analyzed with Volatility, not mounted as disks."
+            )
+            return False
+
         print(f"[*] Mounting evidence file: {evidence_file} for case: {case_name}")
 
         # Create unique mount points

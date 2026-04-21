@@ -43,7 +43,7 @@ To track data volumes, browser history, and deleted files.
 ## General SIFT Workflow
 
 1. **Start Environment**: Use `init_environment.py` to spin up the SIFT container.
-2. **Initialize Case**: Use `init_case.py --case <name> <images...>` to mount evidence to `/mnt/cases/<name>/<evidence>`.
+2. **Initialize Case**: Use `init_case.py --case <name> <images...>` to mount evidence to `/mnt/cases/<name>/<evidence>`. (Be sure to reference ONLY disk images, not memory images since they cannot be mounted.)
 3. **Automated Triage**: Run `python triage_extractor.py --case <name> --all --background` to start automated processing in the background.
    - **Monitor Progress**: Use `tail -f scratch/<name>/triage.log` to check status.
    - **Fine-grained Control**: Use `--evidence <image_name>` instead of `--all` to triage specific images.

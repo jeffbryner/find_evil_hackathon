@@ -11,7 +11,7 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 
 - **Container ID**: Always stored in `scratch/container_id.txt`.
 - **Persistent Environment**: Aim to use a single SIFT container for the entire case.
-- **Evidence Mounts**: All case files are accessible via `/cases`. Mounted filesystems live under `/mnt/cases/<case_name>/<image_name>`.
+- **Evidence Mounts**: All local files are accessible in the docker image via `/cases`. Mounted filesystems live under `/mnt/cases/<case_name>/<image_name>`.
 - **Local to Container Mapping**: 
     - `.` (CWD) -> `/cases` (Read-Only)
     - `./scratch` -> `/scratch` (Read-Write)
@@ -23,13 +23,13 @@ To maintain a single container with multiple mounted images:
 ### 1. Start Environment
 Initialize the shared SIFT environment:
 ```bash
-python3 init_environment.py
+uv python init_environment.py
 ```
 
 ### 2. Initialize Case & Mount Evidence
 Associate images with a case and mount them automatically:
 ```bash
-./helpers/init_case.sh --case <case_name> <images...>
+uv python init_case.py --case <case_name> <images...>
 ```
 
 ### 3. Verify All Mounts
@@ -62,3 +62,4 @@ docker exec $(cat scratch/container_id.txt) vol -f /cases/images/win7-32-nromano
 - **Mount Denied**: Ensure the container is started with `--privileged`.
 - **Path Issues**: Always use absolute paths within `docker exec` commands or relative paths from the container's root.
 - **EWF Mount Fails**: Check if another process is using the E01 or if the mount point is not empty.
+- **Incorrect file types**: Be sure you aren't attempting to mount a memory image like it is a disk image. 
