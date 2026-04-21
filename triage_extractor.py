@@ -2,6 +2,9 @@ import os
 import sys
 import duckdb
 import re
+import argparse
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from helpers.sift_tools import SIFTOrchestrator
 
 
@@ -204,7 +207,55 @@ class TriageExtractor:
                     print(f"[-] Failed to convert {file}: {e}")
 
 
+def run_triage_worker(orchestrator, container_id, mount_path):
+    """Worker function for ThreadPoolExecutor."""
+    try:
+        extractor = TriageExtractor(orchestrator, container_id, mount_path)
+        extractor.run_triage()
+    except Exception as e:
+        print(f"[-] Error during triage for {mount_path}: {e}")
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Extract triage artifacts.")
+    parser.add_argument("--case", required=True, help="Name of the forensic case")
+    parser.add_argument(
+        "--evidence", nargs="+", help="Specific evidence names to process"
+    )
+    parser.add_argument(
+        "--all", action="store_true", help="Process all mounted evidence for the case"
+    )
+    parser.add_argument(
+        "--background", action="store_true", help="Run extraction in the background"
+    )
+
+    args = parser.parse_args()
+
+    if args.background:
+        # Re-run the current script without the --background flag
+        cmd = [sys.executable, sys.argv[0], "--case", args.case]
+        if args.all:
+            cmd.append("--all")
+        elif args.evidence:
+            cmd.extend(["--evidence"] + args.evidence)
+
+        log_dir = os.path.join("scratch", args.case)
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "triage.log")
+
+        print(f"[*] Launching triage extraction in background for case: {args.case}")
+        with open(log_file, "a") as f:
+            f.write(f"\n--- Triage started at {os.popen('date').read().strip()} ---\n")
+            subprocess.Popen(
+                cmd, stdout=f, stderr=subprocess.STDOUT, start_new_session=True
+            )
+
+        print(
+            f"[+] Background process started. Monitor progress with: tail -f {log_file}"
+        )
+        sys.exit(0)
+
+    # Synchronous processing
     if not os.path.exists("scratch/container_id.txt"):
         print("[-] Container ID not found. Run init_case.py first.")
         sys.exit(1)
@@ -215,25 +266,41 @@ def main():
     orchestrator = SIFTOrchestrator()
     orchestrator.container = orchestrator.client.containers.get(container_id)
 
-    # We need to find what's mounted. New path is /mnt/cases/<case_name>/<evidence_name>
-    output, _ = orchestrator.execute("ls -R /mnt/cases")
-    # This is a bit complex to parse. Let's do it better.
-    # /mnt/cases:
-    # case1
-    # case2
-    #
-    # /mnt/cases/case1:
-    # img1
-    # img2
+    # Discover mounts for the case
+    case_path = f"/mnt/cases/{args.case}"
+    output, _ = orchestrator.execute(
+        f"find {case_path} -maxdepth 1 -mindepth 1 -type d"
+    )
+    available_mounts = output.splitlines()
 
-    output, _ = orchestrator.execute("find /mnt/cases -maxdepth 2 -mindepth 2 -type d")
-    mounts = output.splitlines()
+    target_mounts = []
+    if args.all:
+        target_mounts = available_mounts
+    elif args.evidence:
+        for ev in args.evidence:
+            expected_path = f"{case_path}/{ev}"
+            if expected_path in available_mounts:
+                target_mounts.append(expected_path)
+            else:
+                print(f"[-] Evidence '{ev}' not found mounted at {expected_path}")
+    else:
+        print("[-] Must specify --all or --evidence <names>")
+        sys.exit(1)
 
-    for mount in mounts:
-        if mount.strip():
-            mount_path = mount.strip()
-            extractor = TriageExtractor(orchestrator, container_id, mount_path)
-            extractor.run_triage()
+    if not target_mounts:
+        print("[-] No valid mounts found to process.")
+        sys.exit(1)
+
+    print(f"[*] Processing {len(target_mounts)} evidence images for case: {args.case}")
+
+    # Parallel execution
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
+        for mount in target_mounts:
+            executor.submit(
+                run_triage_worker, orchestrator, container_id, mount.strip()
+            )
+
+    print("[+] Triage extraction complete.")
 
 
 if __name__ == "__main__":
