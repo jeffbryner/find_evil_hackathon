@@ -15,7 +15,7 @@ Use this utility to perform high-speed SQL analysis on artifacts extracted from 
 - `--case <name>`: **(Required)** Specifies the case folder in `scratch/`.
 - `--evidence <name>|all`: Targets a specific host or aggregates all hosts in the case (Default: `all`).
 - `--schema`: Displays available tables and columns for the case. **Always run this first if you are unsure of the schema.**
-- `--limit <N>`: Limits output to N rows (Default: 1000).
+- `--limit <N>`: Limits output to N rows (Default: 200).
 
 ## Table & Column Aliases
 The utility automatically provides aliases to make SQL easier to write:
@@ -37,3 +37,4 @@ Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippet
 1. **Discover**: Run with `--schema` to see what artifacts were successfully extracted.
 2. **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser LIKE '%Registry%'`).
 3. **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` to see what the system was doing when a specific file was created.
+4. **Unified View**: Using --evidence all (or omitting evidence) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
