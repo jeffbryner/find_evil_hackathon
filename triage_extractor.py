@@ -99,7 +99,7 @@ class TriageExtractor:
         )
         artifacts = (
             "WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache,"
-            "WindowsEventLogSecurity,WindowsEventLogSystem"
+            "WindowsEventLogSecurity,WindowsEventLogSystem,WindowsPrefetchFiles"
         )
         cmd = f"log2timeline.py --artifact_filters '{artifacts}' --storage_file {plaso_storage} {self.mount_path}"
         self.orchestrator.execute(cmd)
