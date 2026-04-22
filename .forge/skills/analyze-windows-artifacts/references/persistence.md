@@ -10,8 +10,8 @@ The `triage_extractor.py` script automatically parses these persistence mechanis
 ```bash
 # Manual extraction via Plaso inside the container if needed:
 docker exec $(cat scratch/container_id.txt) log2timeline.py \
-  --artifact_filters 'WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache' \
-  --storage_file /scratch/case/evidence/persistence.plaso \
+  --artifact_filters 'WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache,WindowsEventLogSecurity,WindowsEventLogSystem' \
+  --storage_file /scratch/case/evidence/artifacts.plaso \
   /mnt/cases/case/evidence
 ```
 

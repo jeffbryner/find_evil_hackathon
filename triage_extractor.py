@@ -4,8 +4,16 @@ import duckdb
 import re
 import argparse
 import subprocess
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from helpers.sift_tools import SIFTOrchestrator
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
 
 
 class TriageExtractor:
@@ -27,25 +35,27 @@ class TriageExtractor:
 
     def _detect_os(self):
         """Detect the OS type of the mounted evidence."""
-        print(f"[*] Detecting OS for {self.mount_path}...")
+        logging.info(f"[*] Detecting OS for {self.mount_path}...")
 
         # Check for Windows
         output, _ = self.orchestrator.execute(f"ls {self.mount_path}")
         if "Windows" in output or "WINDOWS" in output:
-            print("[+] Detected OS: Windows")
+            logging.info("[+] Detected OS: Windows")
             return "windows"
 
         # Check for Linux
         if "etc" in output and "var" in output and "bin" in output:
-            print("[+] Detected OS: Linux")
+            logging.info("[+] Detected OS: Linux")
             return "linux"
 
-        print("[*] OS not recognized. Using generic profile.")
+        logging.info("[*] OS not recognized. Using generic profile.")
         return "generic"
 
     def run_triage(self):
         """Run the triage process based on the detected OS."""
-        print(f"[*] Starting triage for {self.evidence_name} ({self.os_type})...")
+        logging.info(
+            f"[*] Starting triage for {self.evidence_name} ({self.os_type})..."
+        )
 
         # 1. Generic Filesystem Timeline (Works for all OS)
         self._extract_fs_timeline()
@@ -61,7 +71,7 @@ class TriageExtractor:
 
     def _extract_fs_timeline(self):
         """Extract filesystem timeline using fls and mactime."""
-        print("[*] Extracting filesystem timeline...")
+        logging.info("[*] Extracting filesystem timeline...")
 
         raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
 
@@ -73,7 +83,7 @@ class TriageExtractor:
 
     def _extract_windows_artifacts(self):
         """Extract Windows-specific artifacts (Registry, EVTX, MFT) into a unified timeline."""
-        print("[*] Extracting Windows artifacts...")
+        logging.info("[*] Extracting Windows artifacts...")
 
         # Paths for Plaso
         plaso_storage = (
@@ -83,41 +93,24 @@ class TriageExtractor:
             f"/scratch/{self.real_case_name}/{self.evidence_name}/artifacts.jsonl"
         )
 
-        # 1. Targeted Registry Artifacts
-        print(
-            "[*] Parsing targeted Registry artifacts (RunKeys, Services, UserAssist, ShimCache)..."
+        # 1. Targeted Registry and Event Log Artifacts
+        logging.info(
+            "[*] Parsing targeted Registry and Event Log artifacts in a single pass..."
         )
-        reg_artifacts = (
-            "WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache"
+        artifacts = (
+            "WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache,"
+            "WindowsEventLogSecurity,WindowsEventLogSystem"
         )
-        cmd = f"log2timeline.py --artifact_filters '{reg_artifacts}' --storage_file {plaso_storage} {self.mount_path}"
+        cmd = f"log2timeline.py --artifact_filters '{artifacts}' --storage_file {plaso_storage} {self.mount_path}"
         self.orchestrator.execute(cmd)
 
-        # 2. Targeted Event Logs
-        # Discover Event Log location (XP vs Win7+)
-        evtx_paths = [
-            f"{self.mount_path}/Windows/System32/winevt/Logs/Security.evtx",
-            f"{self.mount_path}/Windows/System32/winevt/Logs/System.evtx",
-            f"{self.mount_path}/WINDOWS/system32/config/SecEvent.Evt",
-            f"{self.mount_path}/WINDOWS/system32/config/SysEvent.Evt",
-        ]
-
-        for evtx_path in evtx_paths:
-            # Check if file exists inside container
-            output, code = self.orchestrator.execute(f"ls {evtx_path}")
-            if code == 0:
-                print(f"[*] Parsing Event Log: {evtx_path}")
-                # Append to the same Plaso storage
-                cmd = f"log2timeline.py --parsers 'winevtx,winevt' --storage_file {plaso_storage} {evtx_path}"
-                self.orchestrator.execute(cmd)
-
-        # 3. Export to JSONL for DuckDB ingestion
-        print("[*] Exporting unified artifacts to JSONL...")
+        # 2. Export to JSONL for DuckDB ingestion
+        logging.info("[*] Exporting unified artifacts to JSONL...")
         cmd = f"psort.py -o json_line -w {jsonl_output} {plaso_storage}"
         self.orchestrator.execute(cmd)
 
         # MFT
-        print("[*] Extracting MFT...")
+        logging.info("[*] Extracting MFT...")
         raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
         # We need to find the offset again or use the one from mount
         output, _ = self.orchestrator.execute("mount")
@@ -139,7 +132,7 @@ class TriageExtractor:
 
     def _extract_linux_artifacts(self):
         """Extract Linux-specific artifacts."""
-        print("[*] Extracting Linux artifacts...")
+        logging.info("[*] Extracting Linux artifacts...")
         linux_dir = os.path.join(self.scratch_dir, "linux")
         os.makedirs(linux_dir, exist_ok=True)
         self.orchestrator.execute(
@@ -160,35 +153,35 @@ class TriageExtractor:
 
     def _convert_to_parquet(self):
         """Convert all extracted artifacts (CSV and JSONL) to Parquet using DuckDB."""
-        print("[*] Converting extracted artifacts to Parquet...")
+        logging.info("[*] Converting extracted artifacts to Parquet...")
         con = duckdb.connect()
 
         # 1. FS Timeline (CSV)
         timeline_csv = os.path.join(self.scratch_dir, "fs_timeline.csv")
         if os.path.exists(timeline_csv):
             parquet_path = os.path.join(self.parquet_dir, "fs_timeline.parquet")
-            print(f"[*] Converting fs_timeline.csv to Parquet...")
+            logging.info(f"[*] Converting fs_timeline.csv to Parquet...")
             try:
                 con.execute(
                     f"COPY (SELECT * FROM read_csv_auto('{timeline_csv}', ignore_errors=true)) TO '{parquet_path}' (FORMAT PARQUET)"
                 )
-                print(f"[+] Created {parquet_path}")
+                logging.info(f"[+] Created {parquet_path}")
             except Exception as e:
-                print(f"[-] Failed to convert timeline: {e}")
+                logging.error(f"[-] Failed to convert timeline: {e}")
 
         # 2. Unified Artifacts (JSONL from Plaso)
         artifacts_jsonl = os.path.join(self.scratch_dir, "artifacts.jsonl")
         if os.path.exists(artifacts_jsonl):
             parquet_path = os.path.join(self.parquet_dir, "artifacts_timeline.parquet")
-            print(f"[*] Converting artifacts.jsonl to Parquet...")
+            logging.info(f"[*] Converting artifacts.jsonl to Parquet...")
             try:
                 # Use read_json_auto for JSONL
                 con.execute(
                     f"COPY (SELECT * FROM read_json_auto('{artifacts_jsonl}')) TO '{parquet_path}' (FORMAT PARQUET)"
                 )
-                print(f"[+] Created {parquet_path}")
+                logging.info(f"[+] Created {parquet_path}")
             except Exception as e:
-                print(f"[-] Failed to convert unified artifacts: {e}")
+                logging.error(f"[-] Failed to convert unified artifacts: {e}")
 
         # 3. Other CSVs (if any)
         for file in os.listdir(self.scratch_dir):
@@ -197,14 +190,14 @@ class TriageExtractor:
                 parquet_path = os.path.join(
                     self.parquet_dir, file.replace(".csv", ".parquet")
                 )
-                print(f"[*] Converting {file} to Parquet...")
+                logging.info(f"[*] Converting {file} to Parquet...")
                 try:
                     con.execute(
                         f"COPY (SELECT * FROM read_csv_auto('{csv_path}', ignore_errors=true)) TO '{parquet_path}' (FORMAT PARQUET)"
                     )
-                    print(f"[+] Created {parquet_path}")
+                    logging.info(f"[+] Created {parquet_path}")
                 except Exception as e:
-                    print(f"[-] Failed to convert {file}: {e}")
+                    logging.error(f"[-] Failed to convert {file}: {e}")
 
 
 def run_triage_worker(orchestrator, container_id, mount_path):
@@ -213,7 +206,7 @@ def run_triage_worker(orchestrator, container_id, mount_path):
         extractor = TriageExtractor(orchestrator, container_id, mount_path)
         extractor.run_triage()
     except Exception as e:
-        print(f"[-] Error during triage for {mount_path}: {e}")
+        logging.error(f"[-] Error during triage for {mount_path}: {e}")
 
 
 def main():
@@ -243,21 +236,23 @@ def main():
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.join(log_dir, "triage.log")
 
-        print(f"[*] Launching triage extraction in background for case: {args.case}")
+        logging.info(
+            f"[*] Launching triage extraction in background for case: {args.case}"
+        )
         with open(log_file, "a") as f:
             f.write(f"\n--- Triage started at {os.popen('date').read().strip()} ---\n")
             subprocess.Popen(
                 cmd, stdout=f, stderr=subprocess.STDOUT, start_new_session=True
             )
 
-        print(
+        logging.info(
             f"[+] Background process started. Monitor progress with: tail -f {log_file}"
         )
         sys.exit(0)
 
     # Synchronous processing
     if not os.path.exists("scratch/container_id.txt"):
-        print("[-] Container ID not found. Run init_case.py first.")
+        logging.error("[-] Container ID not found. Run init_case.py first.")
         sys.exit(1)
 
     with open("scratch/container_id.txt", "r") as f:
@@ -282,16 +277,20 @@ def main():
             if expected_path in available_mounts:
                 target_mounts.append(expected_path)
             else:
-                print(f"[-] Evidence '{ev}' not found mounted at {expected_path}")
+                logging.error(
+                    f"[-] Evidence '{ev}' not found mounted at {expected_path}"
+                )
     else:
-        print("[-] Must specify --all or --evidence <names>")
+        logging.error("[-] Must specify --all or --evidence <names>")
         sys.exit(1)
 
     if not target_mounts:
-        print("[-] No valid mounts found to process.")
+        logging.error("[-] No valid mounts found to process.")
         sys.exit(1)
 
-    print(f"[*] Processing {len(target_mounts)} evidence images for case: {args.case}")
+    logging.info(
+        f"[*] Processing {len(target_mounts)} evidence images for case: {args.case}"
+    )
 
     # Parallel execution
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
@@ -300,7 +299,7 @@ def main():
                 run_triage_worker, orchestrator, container_id, mount.strip()
             )
 
-    print("[+] Triage extraction complete.")
+    logging.info("[+] Triage extraction complete.")
 
 
 if __name__ == "__main__":
