@@ -57,6 +57,9 @@ Volatility 3 can be run against raw memory images in `/cases/images/`:
 docker exec $(cat scratch/container_id.txt) vol -f /cases/images/win7-32-nromanoff-memory-raw.001 windows.pslist
 ```
 
+### 4. Post-Extraction Analysis
+Once artifacts are extracted to Parquet format (via `triage_extractor.py`), use the `forensic-querying` skill to perform high-speed SQL analysis across the evidence.
+
 ## Troubleshooting
 
 - **Mount Denied**: Ensure the container is started with `--privileged`.

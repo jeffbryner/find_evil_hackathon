@@ -47,4 +47,4 @@ To track data volumes, browser history, and deleted files.
 3. **Automated Triage**: Run `python triage_extractor.py --case <name> --all --background` to start automated processing in the background.
    - **Monitor Progress**: Use `tail -f scratch/<name>/triage.log` to check status.
    - **Fine-grained Control**: Use `--evidence <image_name>` instead of `--all` to triage specific images.
-4. **Structured Analysis**: Use DuckDB (via `query_parquet.py`) to query the unified timelines (e.g., `fs_timeline.parquet`, `artifacts_timeline.parquet`) across the entire case.
+4. **Structured Analysis**: Use the `forensic-querying` skill to perform deep analysis on the unified timelines (e.g., `fs_timeline.parquet`, `artifacts_timeline.parquet`) using DuckDB and the `query_parquet.py` utility. Refer to that skill for SQL recipes and schema documentation.
