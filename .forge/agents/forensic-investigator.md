@@ -12,6 +12,7 @@ tools:
   - fs_search
   - read
   - write
+  - patch
   - remove
   - shell
   - fetch
