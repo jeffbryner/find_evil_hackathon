@@ -36,7 +36,7 @@ def get_docker_socket():
 
 
 class SIFTOrchestrator:
-    def __init__(self, image_name="sift-volatility:latest"):
+    def __init__(self, image_name="sift-volatility:pdb-cache"):
         # Use dynamic socket discovery
         self.client = docker.DockerClient(base_url=get_docker_socket())
         self.image_name = image_name
