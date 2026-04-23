@@ -120,7 +120,7 @@ def main():
                     "try_strptime(\"Date\", '%a %b %d %Y %H:%M:%S') AS timestamp_utc"
                 )
             elif table_name == "artifacts_timeline":
-                select_clause = "*, to_timestamp(timestamp / 1000000) AS timestamp_utc"
+                select_clause = "*, to_timestamp(timestamp / 1000000) AT TIME ZONE 'UTC' AS timestamp_utc"
 
             if args.evidence == "all":
                 # For multiple evidence files, use read_parquet with union_by_name=True
