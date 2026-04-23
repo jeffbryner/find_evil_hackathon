@@ -81,8 +81,8 @@ def main():
     parser.add_argument(
         "--limit",
         type=int,
-        default=200,
-        help="Maximum number of rows to return (default: 200)",
+        default=100,
+        help="Maximum number of rows to return (default: 100)",
     )
 
     # Custom handling for positional query if --query is not provided and not just --schema
