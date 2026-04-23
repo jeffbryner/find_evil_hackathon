@@ -5,7 +5,7 @@ description: Expert forensic investigator specialized in Windows artifacts and S
 reasoning:
   enabled: true
 provider: vertex_ai
-model: gemini-3-flash-preview
+model: gemini-3.1-pro-preview
 tools: 
   - followup
   - task
