@@ -26,6 +26,9 @@ The utility automatically provides aliases to make SQL easier to write:
 - **artifacts_timeline**:
     - `timestamp_utc`: Converts Plaso microseconds to a standard DuckDB timestamp.
 
+## Timestamps ##
+- Timestamps are in UTC, you can filter and select by timestamps by value, not by string matching. 
+
 ## Investigative Recipes
 
 Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippets for:

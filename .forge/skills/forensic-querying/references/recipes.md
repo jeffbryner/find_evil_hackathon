@@ -60,3 +60,10 @@ FROM artifacts_timeline
 WHERE parser = 'winreg/run'
 ORDER BY timestamp_utc DESC;
 ```
+
+## 6. Inventory of data
+Quick inventory of what artifact data is available
+```sql 
+SELECT parser, count(*) FROM artifacts_timeline  GROUP BY parser";
+
+```
