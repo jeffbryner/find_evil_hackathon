@@ -21,6 +21,7 @@ Use this utility to perform high-speed SQL analysis on artifacts extracted from 
 The utility automatically provides aliases to make SQL easier to write:
 - **fs_timeline**:
     - `file_name`: Alias for `"File Name"` (removes space).
+    - `timestamp_utc`: Parsed DuckDB timestamp from the mactime Date string.
     - `filename_path`: Full path to the source parquet (useful for identifying the host when using `--evidence all`).
 - **artifacts_timeline**:
     - `timestamp_utc`: Converts Plaso microseconds to a standard DuckDB timestamp.

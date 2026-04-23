@@ -18,11 +18,11 @@ ORDER BY minute_bucket ASC;
 ## 2. MACB Flag Filtering (Filesystem)
 Find files that were "Created" (B) or "Modified" (M) in a specific directory.
 ```sql
-SELECT timestamp, file_name, "Type" as macb
+SELECT timestamp_utc, file_name, "Type" as macb
 FROM fs_timeline
 WHERE "Type" LIKE '%B%' 
   AND file_name LIKE '/Windows/System32/%'
-ORDER BY timestamp DESC;
+ORDER BY timestamp_utc DESC;
 ```
 
 ## 3. Lateral Movement Detection (Cross-Host)
@@ -47,8 +47,8 @@ SELECT
     fs.file_name
 FROM artifacts_timeline art
 JOIN fs_timeline fs 
-  ON art.timestamp_utc BETWEEN fs.timestamp - INTERVAL '10 seconds' 
-                          AND fs.timestamp + INTERVAL '10 seconds'
+  ON art.timestamp_utc BETWEEN fs.timestamp_utc - INTERVAL '10 seconds' 
+                          AND fs.timestamp_utc + INTERVAL '10 seconds'
 WHERE fs.file_name LIKE '%.ps1';
 ```
 
