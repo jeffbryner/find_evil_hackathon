@@ -17,17 +17,26 @@ Use this utility to perform high-speed SQL analysis on artifacts extracted from 
 - `--schema`: Displays available tables and columns for the case. **Always run this first if you are unsure of the schema.**
 - `--limit <N>`: Limits output to N rows (Default: 200).
 
-## Table & Column Aliases
-The utility automatically provides aliases to make SQL easier to write:
-- **fs_timeline**:
-    - `file_name`: Alias for `"File Name"` (removes space).
-    - `timestamp_utc`: Parsed DuckDB timestamp from the mactime Date string.
-    - `filename_path`: Full path to the source parquet (useful for identifying the host when using `--evidence all`).
-- **artifacts_timeline**:
-    - `timestamp_utc`: Converts Plaso microseconds to a standard DuckDB timestamp.
+## Core Schema
+All timelines (`fs_timeline`, `artifacts_timeline`) share a standardized core schema for easy correlation:
 
-## Timestamps ##
-- Timestamps are in UTC, you can filter and select by timestamps by value, not by string matching. 
+| Column | Type | Description |
+| --- | --- | --- |
+| `timestamp` | TIMESTAMP | UTC event time. Primary sort/filter key. |
+| `data_type` | VARCHAR | High-level artifact type (e.g., `windows:registry:run`, `fs:mactime`). |
+| `parser` | VARCHAR | The tool/parser that extracted the event (e.g., `mactime`, `winreg/run`). |
+| `message` | VARCHAR | Primary human-readable summary. |
+| `file_name_lower` | VARCHAR | Lowercased path/filename for case-insensitive searching. |
+| `details` | JSON | A JSON blob containing all other artifact-specific fields. |
+| `filename_path` | VARCHAR | (Only when using `--evidence all`) Path to the source host's parquet. |
+
+## Querying JSON Details
+To extract specific fields from the `details` column, use the DuckDB JSON operator `->>`:
+```sql
+SELECT message, details->>'registry_key' as key_path 
+FROM artifacts_timeline 
+WHERE data_type LIKE 'windows:registry%';
+```
 
 ## Investigative Recipes
 
@@ -40,5 +49,5 @@ Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippet
 ## Workflow Strategy
 1. **Discover**: Run with `--schema` to see what artifacts were successfully extracted.
 2. **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser LIKE '%Registry%'`).
-3. **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` to see what the system was doing when a specific file was created.
+3. **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` on `timestamp` to see what the system was doing when a specific file was created.
 4. **Unified View**: Using --evidence all (or omitting evidence) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 

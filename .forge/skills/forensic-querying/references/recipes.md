@@ -6,7 +6,7 @@ Use these SQL recipes as templates for common investigative tasks.
 Find bursts of activity (e.g., more than 20 events per minute) to identify periods of intense attacker activity.
 ```sql
 SELECT 
-    date_trunc('minute', timestamp_utc) as minute_bucket, 
+    date_trunc('minute', timestamp) as minute_bucket, 
     count(*) as event_count,
     string_agg(DISTINCT parser, ', ') as artifact_types
 FROM artifacts_timeline
@@ -18,23 +18,23 @@ ORDER BY minute_bucket ASC;
 ## 2. MACB Flag Filtering (Filesystem)
 Find files that were "Created" (B) or "Modified" (M) in a specific directory.
 ```sql
-SELECT timestamp_utc, file_name, "Type" as macb
+SELECT timestamp, message as file_name, details->>'Type' as macb
 FROM fs_timeline
-WHERE "Type" LIKE '%B%' 
-  AND file_name LIKE '/Windows/System32/%'
-ORDER BY timestamp_utc DESC;
+WHERE details->>'Type' LIKE '%B%' 
+  AND file_name_lower LIKE '/windows/system32/%'
+ORDER BY timestamp DESC;
 ```
 
 ## 3. Lateral Movement Detection (Cross-Host)
 Find the same suspicious file name appearing across multiple hosts in the case.
 ```sql
 SELECT 
-    file_name, 
+    file_name_lower, 
     count(DISTINCT filename_path) as host_count,
     string_agg(filename_path, ', ') as host_paths
 FROM fs_timeline
-WHERE file_name LIKE '%evil.exe' OR file_name LIKE '%psexec%'
-GROUP BY file_name
+WHERE file_name_lower LIKE '%evil.exe' OR file_name_lower LIKE '%psexec%'
+GROUP BY 1
 HAVING host_count > 1;
 ```
 
@@ -42,28 +42,28 @@ HAVING host_count > 1;
 See what Registry or Event Log entries occurred within 10 seconds of a specific file being created.
 ```sql
 SELECT 
-    art.timestamp_utc, 
+    art.timestamp, 
     art.message, 
-    fs.file_name
+    fs.message as file_name
 FROM artifacts_timeline art
 JOIN fs_timeline fs 
-  ON art.timestamp_utc BETWEEN fs.timestamp_utc - INTERVAL '10 seconds' 
-                          AND fs.timestamp_utc + INTERVAL '10 seconds'
-WHERE fs.file_name LIKE '%.ps1';
+  ON art.timestamp BETWEEN fs.timestamp - INTERVAL '10 seconds' 
+                       AND fs.timestamp + INTERVAL '10 seconds'
+WHERE fs.file_name_lower LIKE '%.ps1';
 ```
 
 ## 5. Persistence Hunting
 Quickly query the Registry 'Run' keys across all hosts.
 ```sql
-SELECT filename_path, timestamp_utc, message
+SELECT filename_path, timestamp, message, details->>'key_path' as registry_key
 FROM artifacts_timeline
 WHERE parser = 'winreg/run'
-ORDER BY timestamp_utc DESC;
+ORDER BY timestamp DESC;
 ```
 
 ## 6. Inventory of data
 Quick inventory of what artifact data is available
 ```sql 
-SELECT parser, count(*) FROM artifacts_timeline  GROUP BY parser";
+SELECT parser, count(*) FROM artifacts_timeline GROUP BY parser;
 
 ```

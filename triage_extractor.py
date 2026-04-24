@@ -162,9 +162,27 @@ class TriageExtractor:
             parquet_path = os.path.join(self.parquet_dir, "fs_timeline.parquet")
             logging.info(f"[*] Converting fs_timeline.csv to Parquet...")
             try:
-                con.execute(
-                    f"COPY (SELECT * FROM read_csv_auto('{timeline_csv}', ignore_errors=true)) TO '{parquet_path}' (FORMAT PARQUET)"
-                )
+                # Extract Big Five + file_name_lower, pack the rest into JSON 'details'
+                sql = f"""
+                COPY (
+                    SELECT 
+                        try_strptime("Date", '%a %b %d %Y %H:%M:%S') AS timestamp,
+                        'fs:mactime' AS data_type,
+                        'mactime' AS parser,
+                        "File Name" AS message,
+                        lower("File Name") AS file_name_lower,
+                        to_json({{
+                            'Size': "Size", 
+                            'Type': "Type", 
+                            'Mode': "Mode", 
+                            'UID': "UID", 
+                            'GID': "GID", 
+                            'Meta': "Meta"
+                        }}) AS details
+                    FROM read_csv_auto('{timeline_csv}', ignore_errors=true)
+                ) TO '{parquet_path}' (FORMAT PARQUET)
+                """
+                con.execute(sql)
                 logging.info(f"[+] Created {parquet_path}")
             except Exception as e:
                 logging.error(f"[-] Failed to convert timeline: {e}")
@@ -175,10 +193,20 @@ class TriageExtractor:
             parquet_path = os.path.join(self.parquet_dir, "artifacts_timeline.parquet")
             logging.info(f"[*] Converting artifacts.jsonl to Parquet...")
             try:
-                # Use read_json_auto for JSONL
-                con.execute(
-                    f"COPY (SELECT * FROM read_json_auto('{artifacts_jsonl}')) TO '{parquet_path}' (FORMAT PARQUET)"
-                )
+                # Use read_json_objects to avoid schema bloat, extract Big Five, pack rest into JSON 'details'
+                sql = f"""
+                COPY (
+                    SELECT 
+                        to_timestamp(CAST(json->>'timestamp' AS BIGINT) / 1000000) AT TIME ZONE 'UTC' AS timestamp,
+                        json->>'data_type' AS data_type,
+                        json->>'parser' AS parser,
+                        json->>'message' AS message,
+                        lower(COALESCE(json->>'filename', json->>'display_name')) AS file_name_lower,
+                        json_merge_patch(json, '{{"timestamp": null, "data_type": null, "parser": null, "message": null}}'::JSON) AS details
+                    FROM read_json_objects('{artifacts_jsonl}')
+                ) TO '{parquet_path}' (FORMAT PARQUET)
+                """
+                con.execute(sql)
                 logging.info(f"[+] Created {parquet_path}")
             except Exception as e:
                 logging.error(f"[-] Failed to convert unified artifacts: {e}")
