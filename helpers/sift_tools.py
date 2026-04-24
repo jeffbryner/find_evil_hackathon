@@ -91,9 +91,10 @@ class SIFTOrchestrator:
         # Safeguard: Do not attempt to mount memory images as disk images
         if "memory" in evidence_basename.lower():
             print(
-                f"[!] Skipping mount for {evidence_basename}: Memory images should be analyzed with Volatility, not mounted as disks."
+                f"[*] Registering memory image: {evidence_basename} (will be analyzed with Volatility)"
             )
-            return False
+            # Memory images are not mounted, so we return the path within the container
+            return f"/cases/{evidence_file}"
 
         print(f"[*] Mounting evidence file: {evidence_file} for case: {case_name}")
 
@@ -216,7 +217,8 @@ class SIFTOrchestrator:
 
     def stop(self):
         if self.container:
-            print(f"[*] Stopping container {self.container.id[:12]}...")
+            container_id = getattr(self.container, "id", "unknown")
+            print(f"[*] Stopping container {container_id[:12]}...")
             # Try to unmount everything first
             self.execute("umount -a -t ntfs")
             self.execute("umount -a -t fuse.ewf")
