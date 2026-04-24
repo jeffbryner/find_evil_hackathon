@@ -17,14 +17,15 @@ logging.basicConfig(
 
 
 class TriageExtractor:
-    def __init__(self, orchestrator, container_id, mount_path):
+    def __init__(self, orchestrator, container_id, mount_path, case_name=None):
         self.orchestrator = orchestrator
         self.container_id = container_id
         self.mount_path = mount_path
         # mount_path is /mnt/cases/<case_name>/<evidence_name>
+        # OR /cases/images/<evidence_name> for memory images
         parts = self.mount_path.split("/")
-        self.real_case_name = parts[-2]
         self.evidence_name = parts[-1]
+        self.real_case_name = case_name if case_name else parts[-2]
         self.scratch_dir = os.path.join(
             os.getcwd(), "scratch", self.real_case_name, self.evidence_name
         )
@@ -36,6 +37,11 @@ class TriageExtractor:
     def _detect_os(self):
         """Detect the OS type of the mounted evidence."""
         logging.info(f"[*] Detecting OS for {self.mount_path}...")
+
+        # Check for Memory Image
+        if "memory" in self.evidence_name.lower():
+            logging.info("[+] Detected OS: Memory Image")
+            return "memory"
 
         # Check for Windows
         output, _ = self.orchestrator.execute(f"ls {self.mount_path}")
@@ -56,6 +62,12 @@ class TriageExtractor:
         logging.info(
             f"[*] Starting triage for {self.evidence_name} ({self.os_type})..."
         )
+
+        # Handle Memory Image triage separately
+        if self.os_type == "memory":
+            self._extract_memory_artifacts()
+            self._convert_to_parquet()
+            return
 
         # 1. Generic Filesystem Timeline (Works for all OS)
         self._extract_fs_timeline()
@@ -151,6 +163,25 @@ class TriageExtractor:
                 f"cp {self.mount_path}{f} /scratch/{self.real_case_name}/{self.evidence_name}/linux/ 2>/dev/null || true"
             )
 
+    def _extract_memory_artifacts(self):
+        """Extract artifacts from a memory image using Volatility 3."""
+        logging.info("[*] Extracting memory artifacts...")
+
+        # Volatility 3 commands
+        # We run silently (-q), offline (--offline), and output jsonl (-r jsonl)
+        plugins = [
+            ("windows.netscan.NetScan", "netscan.jsonl"),
+            ("windows.pslist.PsList", "pslist.jsonl"),
+        ]
+
+        for plugin, output_file in plugins:
+            logging.info(f"[*] Running Volatility plugin: {plugin}...")
+            output_path = (
+                f"/scratch/{self.real_case_name}/{self.evidence_name}/{output_file}"
+            )
+            cmd = f"bash -c 'vol -f {self.mount_path} -q --offline -r jsonl {plugin} > {output_path}'"
+            self.orchestrator.execute(cmd)
+
     def _convert_to_parquet(self):
         """Convert all extracted artifacts (CSV and JSONL) to Parquet using DuckDB."""
         logging.info("[*] Converting extracted artifacts to Parquet...")
@@ -227,11 +258,27 @@ class TriageExtractor:
                 except Exception as e:
                     logging.error(f"[-] Failed to convert {file}: {e}")
 
+        # 4. Volatility JSONL output
+        for file in ["pslist.jsonl", "netscan.jsonl"]:
+            jsonl_path = os.path.join(self.scratch_dir, file)
+            if os.path.exists(jsonl_path):
+                parquet_name = f"memory_{file.replace('.jsonl', '.parquet')}"
+                parquet_path = os.path.join(self.parquet_dir, parquet_name)
+                logging.info(f"[*] Converting {file} to Parquet...")
+                try:
+                    # Volatility JSONL output is very structured and clean
+                    con.execute(
+                        f"COPY (SELECT * FROM read_json_auto('{jsonl_path}')) TO '{parquet_path}' (FORMAT PARQUET)"
+                    )
+                    logging.info(f"[+] Created {parquet_path}")
+                except Exception as e:
+                    logging.error(f"[-] Failed to convert {file}: {e}")
 
-def run_triage_worker(orchestrator, container_id, mount_path):
+
+def run_triage_worker(orchestrator, container_id, mount_path, case_name):
     """Worker function for ThreadPoolExecutor."""
     try:
-        extractor = TriageExtractor(orchestrator, container_id, mount_path)
+        extractor = TriageExtractor(orchestrator, container_id, mount_path, case_name)
         extractor.run_triage()
     except Exception as e:
         logging.error(f"[-] Error during triage for {mount_path}: {e}")
@@ -301,9 +348,13 @@ def main():
         target_mounts = available_mounts
     elif args.evidence:
         for ev in args.evidence:
+            # Check if it's a directory mount
             expected_path = f"{case_path}/{ev}"
             if expected_path in available_mounts:
                 target_mounts.append(expected_path)
+            elif "memory" in ev.lower():
+                # For memory images, we assume they are in /cases/images/
+                target_mounts.append(f"/cases/images/{ev}")
             else:
                 logging.error(
                     f"[-] Evidence '{ev}' not found mounted at {expected_path}"
@@ -324,7 +375,11 @@ def main():
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
         for mount in target_mounts:
             executor.submit(
-                run_triage_worker, orchestrator, container_id, mount.strip()
+                run_triage_worker,
+                orchestrator,
+                container_id,
+                mount.strip(),
+                args.case,
             )
 
     logging.info("[+] Triage extraction complete.")
