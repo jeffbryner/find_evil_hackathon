@@ -110,17 +110,9 @@ def main():
 
         # Register views for each table type
         for table_name in targets.keys():
-            # Enhancements for forensic usability:
-            # 1. Alias columns with spaces (like 'File Name') for easier SQL access
-            # 2. Add derived UTC timestamps for Plaso artifacts (microseconds to timestamp)
+            # The triage_extractor now provides a consistent, optimized schema:
+            # (timestamp, data_type, parser, message, file_name_lower, details)
             select_clause = "*"
-            if table_name == "fs_timeline":
-                select_clause = (
-                    '*, "File Name" AS file_name, "Date" AS date_str, '
-                    "try_strptime(\"Date\", '%a %b %d %Y %H:%M:%S') AS timestamp_utc"
-                )
-            elif table_name == "artifacts_timeline":
-                select_clause = "*, to_timestamp(timestamp / 1000000) AT TIME ZONE 'UTC' AS timestamp_utc"
 
             if args.evidence == "all":
                 # For multiple evidence files, use read_parquet with union_by_name=True
