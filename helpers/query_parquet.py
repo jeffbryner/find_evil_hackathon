@@ -98,15 +98,20 @@ def main():
     # Resolve parquet targets
     targets = get_parquet_files(case_path, args.evidence)
 
-    if not targets:
-        print(
-            f"[-] Error: No Parquet files found for case '{args.case}' and evidence '{args.evidence}'"
-        )
+    if not targets and not os.path.exists(os.path.join(case_path, "iocs.jsonl")):
+        print(f"[-] Error: No forensic artifacts found for case '{args.case}'")
         sys.exit(1)
 
     try:
         # Connect to an in-memory database
         con = duckdb.connect(":memory:")
+
+        # Register IOCs view if it exists
+        iocs_path = os.path.join(case_path, "iocs.jsonl")
+        if os.path.exists(iocs_path):
+            con.execute(
+                f"CREATE VIEW iocs AS SELECT * FROM read_json_auto('{iocs_path}')"
+            )
 
         # Register views for each table type
         for table_name in targets.keys():
@@ -131,6 +136,14 @@ def main():
 
         if args.schema:
             print(f"[*] Schema for Case: {args.case} (Evidence: {args.evidence})")
+
+            # Show IOCs schema if it exists
+            iocs_path = os.path.join(case_path, "iocs.jsonl")
+            if os.path.exists(iocs_path):
+                print("\nTable: iocs")
+                schema_df = con.execute("DESCRIBE iocs").fetchdf()
+                print(format_as_markdown(schema_df))
+
             for t_name in targets.keys():
                 print(f"\nTable: {t_name}")
                 schema_df = con.execute(f"DESCRIBE {t_name}").fetchdf()
