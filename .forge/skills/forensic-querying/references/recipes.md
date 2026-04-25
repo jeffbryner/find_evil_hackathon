@@ -67,3 +67,15 @@ Quick inventory of what artifact data is available
 SELECT parser, count(*) FROM artifacts_timeline GROUP BY parser;
 
 ```
+
+## 7. JSON access
+The details column will contain JSON representation of the source data. 
+
+You can use either of two methods to access individual fields: 
+- arrow syntax: SELECT details->>'$.event_identifier' as event_id
+- json_extract: SELECT json_extract_string(details, '$.event_identifier') as event_id,
+
+List values can be access by their array position using either method: 
+- SELECT timestamp, filename_path, details->>'$.strings[0]' as service_name FROM artifacts_timeline WHERE parser = 'winevtx'
+- SELECT timestamp, filename_path, json_extract_string(details,'$.strings[0]') as service_name FROM artifacts_timeline WHERE parser = 'winevtx'
+

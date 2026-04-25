@@ -13,8 +13,10 @@ Analyze a RAM image to find live activity and hidden threats using **Volatility 
 ## Volatility 3 Usage Rules
 1. **Plugin Names**: Always use the full plugin name (e.g., `windows.pslist.PsList` or `windows.pslist`).
 2. **PID Filtering**: Multiple PIDs MUST be space-separated, NOT comma-separated (e.g., `--pid 123 456`).
-3. **Output Formatting**: Use `-r csv` to output results in CSV format for easier ingestion into DuckDB.
+3. **Output Formatting**: Use `-r jsonl` to output results in jsonl format for easier ingestion into DuckDB.
 4. **Symbol Tables**: Volatility 3 automatically handles symbols; you do not need to specify a profile.
+5. **Reduce noise**: Always run silently (-q), offline (--offline), and output jsonl (-r jsonl)
+6. **Import to parquet**: Import as duckDB accessible parquet via: COPY (SELECT * FROM read_json_auto('{jsonl_path}')) TO '{parquet_path}' (FORMAT PARQUET)
 
 ## 1. Process Enumeration
 - **`windows.pslist.PsList`**: Walk the linked list of processes (fast, but misses hidden).

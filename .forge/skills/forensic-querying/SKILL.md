@@ -38,6 +38,30 @@ FROM artifacts_timeline
 WHERE data_type LIKE 'windows:registry%';
 ```
 
+## Tracking and Querying IOCs
+
+You can share Indicators of Compromise (IOCs) between agents using `ioc_tracker.py` and query them alongside your forensic data.
+
+### Adding an IOC
+To track a new IOC (e.g., an IP found in memory or a malicious hash), use the tracker helper:
+```bash
+uv run helpers/ioc_tracker.py --case <case_name> --add <type> --value <ioc_value> --source <context>
+# Example: uv run helpers/ioc_tracker.py --case SRL --add ip --value 199.73.28.114 --source memory_netscan
+```
+
+### Querying IOCs
+If IOCs have been added for a case, a special `iocs` view is automatically available in DuckDB. You can query it directly or join it with your artifact tables:
+
+```sql
+-- View all tracked IOCs
+SELECT * FROM iocs;
+
+-- Find filesystem activity related to known IOCs
+SELECT f.timestamp, f.message, i.type, i.value as matched_ioc
+FROM fs_timeline f
+JOIN iocs i ON f.message LIKE '%' || i.value || '%';
+```
+
 ## Investigative Recipes
 
 Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippets for:
@@ -45,9 +69,10 @@ Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippet
 2. MACB flag analysis.
 3. Cross-host lateral movement detection.
 4. Correlating process execution with file activity.
+5. Joining dynamic IOCs with static timelines.
 
 ## Workflow Strategy
-1. **Discover**: Run with `--schema` to see what artifacts were successfully extracted.
+1. **Discover**: Run with `--schema` to see what artifacts were successfully extracted. Tables with 'memory' in the name are from volatility and will not include a json/details column.
 2. **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser LIKE '%Registry%'`).
 3. **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` on `timestamp` to see what the system was doing when a specific file was created.
 4. **Unified View**: Using --evidence all (or omitting evidence) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
