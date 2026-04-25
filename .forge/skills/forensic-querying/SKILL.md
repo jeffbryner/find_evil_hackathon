@@ -1,3 +1,7 @@
+---
+name: forensic-querying
+description: Using the querying utilities and the prepared duckDB instance for querying/analyzing forensic artifacts.
+---
 # Forensic Querying & Data Analysis
 
 This skill provides the technical documentation and SQL recipes for analyzing forensic artifacts using the DuckDB/Parquet pipeline via the `query_parquet.py` utility.
@@ -15,7 +19,8 @@ Use this utility to perform high-speed SQL analysis on artifacts extracted from 
 - `--case <name>`: **(Required)** Specifies the case folder in `scratch/`.
 - `--evidence <name>|all`: Targets a specific host or aggregates all hosts in the case (Default: `all`).
 - `--schema`: Displays available tables and columns for the case. **Always run this first if you are unsure of the schema.**
-- `--limit <N>`: Limits output to N rows (Default: 200).
+- `--limit <N>`: Limits output to N rows (Default: 50).
+- `--jsonl`: Outputs results as JSON Lines (.jsonl). **Preferred for programmatic parsing by agents**, especially when dealing with long strings or complex data. (Note: status/info messages will go to stderr when --jsonl is chosen)
 
 ## Core Schema
 All timelines (`fs_timeline`, `artifacts_timeline`) share a standardized core schema for easy correlation:
