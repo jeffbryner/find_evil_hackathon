@@ -84,6 +84,9 @@ def main():
         default=50,
         help="Maximum number of rows to return (default: 50)",
     )
+    parser.add_argument(
+        "--jsonl", action="store_true", help="Output results as JSON Lines (.jsonl)"
+    )
 
     # Custom handling for positional query if --query is not provided and not just --schema
     args, unknown = parser.parse_known_args()
@@ -92,14 +95,17 @@ def main():
 
     case_path = os.path.join("scratch", args.case)
     if not os.path.exists(case_path):
-        print(f"[-] Error: Case directory not found: {case_path}")
+        print(f"[-] Error: Case directory not found: {case_path}", file=sys.stderr)
         sys.exit(1)
 
     # Resolve parquet targets
     targets = get_parquet_files(case_path, args.evidence)
 
     if not targets and not os.path.exists(os.path.join(case_path, "iocs.jsonl")):
-        print(f"[-] Error: No forensic artifacts found for case '{args.case}'")
+        print(
+            f"[-] Error: No forensic artifacts found for case '{args.case}'",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     try:
@@ -135,19 +141,36 @@ def main():
                 )
 
         if args.schema:
-            print(f"[*] Schema for Case: {args.case} (Evidence: {args.evidence})")
+            if not args.jsonl:
+                print(f"[*] Schema for Case: {args.case} (Evidence: {args.evidence})")
 
             # Show IOCs schema if it exists
             iocs_path = os.path.join(case_path, "iocs.jsonl")
             if os.path.exists(iocs_path):
-                print("\nTable: iocs")
                 schema_df = con.execute("DESCRIBE iocs").fetchdf()
-                print(format_as_markdown(schema_df))
+                if args.jsonl:
+                    schema_df["table"] = "iocs"
+                    print(
+                        schema_df.to_json(
+                            orient="records", lines=True, date_format="iso"
+                        )
+                    )
+                else:
+                    print("\nTable: iocs")
+                    print(format_as_markdown(schema_df))
 
             for t_name in targets.keys():
-                print(f"\nTable: {t_name}")
                 schema_df = con.execute(f"DESCRIBE {t_name}").fetchdf()
-                print(format_as_markdown(schema_df))
+                if args.jsonl:
+                    schema_df["table"] = t_name
+                    print(
+                        schema_df.to_json(
+                            orient="records", lines=True, date_format="iso"
+                        )
+                    )
+                else:
+                    print(f"\nTable: {t_name}")
+                    print(format_as_markdown(schema_df))
 
             if not args.query:
                 sys.exit(0)
@@ -158,23 +181,39 @@ def main():
             if "LIMIT" not in query.upper() and "DESCRIBE" not in query.upper():
                 query += f" LIMIT {args.limit}"
 
-            print(f"[*] Executing DuckDB Query: {query}")
+            if not args.jsonl:
+                print(f"[*] Executing DuckDB Query: {query}")
+            else:
+                print(f"[*] Executing DuckDB Query: {query}", file=sys.stderr)
+
             df = con.execute(query).fetchdf()
 
             if df.empty:
-                print("[+] Query returned no results.")
+                if not args.jsonl:
+                    print("[+] Query returned no results.")
+                else:
+                    print("[+] Query returned no results.", file=sys.stderr)
             else:
                 # Cap output even if LIMIT was higher, to avoid overwhelming context
                 if len(df) > args.limit:
-                    print(
-                        f"[!] Warning: Result set exceeded limit. Truncating to {args.limit} rows."
-                    )
+                    if not args.jsonl:
+                        print(
+                            f"[!] Warning: Result set exceeded limit. Truncating to {args.limit} rows."
+                        )
+                    else:
+                        print(
+                            f"[!] Warning: Result set exceeded limit. Truncating to {args.limit} rows.",
+                            file=sys.stderr,
+                        )
                     df = df.head(args.limit)
 
-                print(format_as_markdown(df))
+                if args.jsonl:
+                    print(df.to_json(orient="records", lines=True, date_format="iso"))
+                else:
+                    print(format_as_markdown(df))
 
     except Exception as e:
-        print(f"[-] DuckDB Error: {e}")
+        print(f"[-] DuckDB Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
