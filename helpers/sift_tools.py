@@ -82,6 +82,7 @@ class SIFTOrchestrator:
 
         print(f"[*] Executing: {command}")
         result = self.container.exec_run(command)
+        print(f"[-] Exit code: {result.exit_code}")
         return result.output.decode("utf-8"), result.exit_code
 
     def mount_evidence(self, evidence_file, case_name):
