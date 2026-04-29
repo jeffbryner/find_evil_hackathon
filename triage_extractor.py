@@ -179,7 +179,9 @@ class TriageExtractor:
             output_path = (
                 f"/scratch/{self.real_case_name}/{self.evidence_name}/{output_file}"
             )
-            cmd = f"bash -c 'vol -f {self.mount_path} -q --offline -r jsonl {plugin} > {output_path}'"
+            cmd = (
+                f"bash -c 'vol -f {self.mount_path} -r jsonl {plugin} > {output_path}'"
+            )
             self.orchestrator.execute(cmd)
 
     def _convert_to_parquet(self):
