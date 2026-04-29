@@ -8,7 +8,8 @@ from triage_extractor import TriageExtractor
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Initialize a forensic case and mount evidence images."
+        description="Initialize a forensic case and mount evidence images.",
+        usage="uv run init_case.py --case SRL2018  images/*",
     )
     parser.add_argument("--case", required=True, help="Name of the forensic case")
     parser.add_argument(
