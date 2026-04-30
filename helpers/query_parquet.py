@@ -38,6 +38,18 @@ def get_parquet_files(case_path: str, evidence: str) -> dict:
     return targets
 
 
+def format_jsonl(df: pd.DataFrame, strict: bool) -> str:
+    """
+    Formats a pandas DataFrame as JSON Lines, optionally removing strict slash escapes
+    for AI-friendly readability.
+    """
+    json_out = df.to_json(orient="records", lines=True, date_format="iso")
+    if not strict:
+        # Strip out standard JSON escapes for forward/backslashes to be more readable for AI agents
+        json_out = json_out.replace("\\\\", "\\").replace("\\/", "/")
+    return json_out
+
+
 def format_as_markdown(df: pd.DataFrame) -> str:
     """
     Formats a pandas DataFrame as a Markdown table.
@@ -87,6 +99,11 @@ def main():
     parser.add_argument(
         "--jsonl", action="store_true", help="Output results as JSON Lines (.jsonl)"
     )
+    parser.add_argument(
+        "--strict-jsonl",
+        action="store_true",
+        help="Do not remove slash escaping in JSONL output (keeps strict JSON formatting)",
+    )
 
     # Custom handling for positional query if --query is not provided and not just --schema
     args, unknown = parser.parse_known_args()
@@ -123,7 +140,8 @@ def main():
         for table_name in targets.keys():
             # The triage_extractor now provides a consistent, optimized schema:
             # (timestamp, data_type, parser, message, file_name_lower, details)
-            select_clause = "*"
+            # include the source image filename without path for joining across datasets
+            select_clause = "*, string_split(filename_path, '/')[-3] AS imagename"
 
             if args.evidence == "all":
                 # For multiple evidence files, use read_parquet with union_by_name=True
@@ -150,11 +168,7 @@ def main():
                 schema_df = con.execute("DESCRIBE iocs").fetchdf()
                 if args.jsonl:
                     schema_df["table"] = "iocs"
-                    print(
-                        schema_df.to_json(
-                            orient="records", lines=True, date_format="iso"
-                        )
-                    )
+                    print(format_jsonl(schema_df, args.strict_jsonl))
                 else:
                     print("\nTable: iocs")
                     print(format_as_markdown(schema_df))
@@ -163,11 +177,7 @@ def main():
                 schema_df = con.execute(f"DESCRIBE {t_name}").fetchdf()
                 if args.jsonl:
                     schema_df["table"] = t_name
-                    print(
-                        schema_df.to_json(
-                            orient="records", lines=True, date_format="iso"
-                        )
-                    )
+                    print(format_jsonl(schema_df, args.strict_jsonl))
                 else:
                     print(f"\nTable: {t_name}")
                     print(format_as_markdown(schema_df))
@@ -208,7 +218,7 @@ def main():
                     df = df.head(args.limit)
 
                 if args.jsonl:
-                    print(df.to_json(orient="records", lines=True, date_format="iso"))
+                    print(format_jsonl(df, args.strict_jsonl))
                 else:
                     print(format_as_markdown(df))
 
