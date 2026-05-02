@@ -2,7 +2,13 @@
 
 Analyze a RAM image to find live activity and hidden threats using **Volatility 3**.
 
-> **CRITICAL**: This environment uses Volatility 3. Do NOT use Volatility 2 syntax (e.g., `--profile` is NOT used).
+> **CRITICAL**: 
+- This environment uses Volatility 3. Do NOT use Volatility 2 syntax (e.g., `--profile` is NOT used).
+- Ensure the data you are pursuing does not already exist in a parquet/duckDB file
+- Be especially careful to not duplicate efforts if the timeliner plugin has been run. Check which timeliner plugins were ran via: 
+```uv run ./helpers/query_parquet.py --case <caseID> "select Plugin,count(*) from memory_timeliner group by Plugin"```
+- You can see what data has already been gathered by examining the 'memory_' tablenames in : 
+```uv run ./helpers/query_parquet.py --case <caseID> --schema```
 
 ## Tools
 
@@ -15,7 +21,7 @@ Analyze a RAM image to find live activity and hidden threats using **Volatility 
 2. **PID Filtering**: Multiple PIDs MUST be space-separated, NOT comma-separated (e.g., `--pid 123 456`).
 3. **Output Formatting**: Use `-r jsonl` to output results in jsonl format for easier ingestion into DuckDB.
 4. **Symbol Tables**: Volatility 3 automatically handles symbols; you do not need to specify a profile.
-5. **Reduce noise**: Always run silently (-q), offline (--offline), and output jsonl (-r jsonl)
+5. **Reduce noise**: ALWAYS run silently (-q)
 6. **Import to parquet**: Import as duckDB accessible parquet via: COPY (SELECT * FROM read_json_auto('{jsonl_path}')) TO '{parquet_path}' (FORMAT PARQUET)
 
 ## 1. Process Enumeration
@@ -24,17 +30,17 @@ Analyze a RAM image to find live activity and hidden threats using **Volatility 
 - **`windows.pstree.PsTree`**: Visualize parent-child relationships.
 
 ```bash
-# Run psscan via docker and output to CSV
-docker exec $(cat scratch/container_id.txt) vol \
-  -f /evidence/memdump.mem -r csv windows.psscan > scratch/psscan.csv
+# Run psscan via docker and output to jsonl
+docker exec $(cat scratch/container_id.txt) vol -q \
+  -f /evidence/memdump.mem -r jsonl windows.psscan > scratch/psscan.jsonl
 ```
 
 ## 2. Network Connections
 - **`windows.netscan.NetScan`**: Find active and closed network connections (TCP/UDP).
 
 ```bash
-docker exec $(cat scratch/container_id.txt) vol \
-  -f /evidence/memdump.mem -r csv windows.netscan > scratch/netscan.csv
+docker exec $(cat scratch/container_id.txt) vol -q \
+  -f /evidence/memdump.mem -r jsonl windows.netscan > scratch/netscan.jsonl
 ```
 
 ## 3. Code Injection & Malware
@@ -43,7 +49,7 @@ docker exec $(cat scratch/container_id.txt) vol \
 
 ```bash
 # Find injected code and dump the suspicious regions
-docker exec $(cat scratch/container_id.txt) vol \
+docker exec $(cat scratch/container_id.txt) vol -q \
   -f /evidence/memdump.mem windows.malfind --dump
 ```
 
@@ -53,7 +59,7 @@ docker exec $(cat scratch/container_id.txt) vol \
 
 ```bash
 # Dump a specific process by PID (space-separated for multiple)
-docker exec $(cat scratch/container_id.txt) vol \
+docker exec $(cat scratch/container_id.txt) vol -q \
   -f /evidence/memdump.mem windows.pslist --pid 1234 --dump
 ```
 
@@ -62,6 +68,6 @@ docker exec $(cat scratch/container_id.txt) vol \
 - **`windows.registry.printkey.PrintKey`**: Print specific registry keys from memory.
 
 ```bash
-docker exec $(cat scratch/container_id.txt) vol \
+docker exec $(cat scratch/container_id.txt) vol -q \
   -f /evidence/memdump.mem windows.registry.printkey --key "Software\Microsoft\Windows\CurrentVersion\Run"
 ```

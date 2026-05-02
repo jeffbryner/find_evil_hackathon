@@ -1,3 +1,7 @@
+---
+name: sleuthkit
+description: Using the sleuthkit for disk image analysis, file extraction and carving on the SIFT workstation
+---
 # Skill: File System & Carving (The Sleuth Kit / EWF Tools)
 
 ## Overview

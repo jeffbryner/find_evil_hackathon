@@ -12,7 +12,7 @@ Use this utility to perform high-speed SQL analysis on artifacts extracted from 
 
 ### Basic Usage
 ```bash
-./helpers/query_parquet.py --case <case_name> --query "<SQL>"
+uv run ./helpers/query_parquet.py --case <case_name> --query "<SQL>"
 ```
 
 ### Key Flags
@@ -75,9 +75,13 @@ Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippet
 3. Cross-host lateral movement detection.
 4. Correlating process execution with file activity.
 5. Joining dynamic IOCs with static timelines.
+6. JSONL and Structured Output handling.
+7. Advanced DuckDB querying (Base64 decoding, JSON parsing).
 
 ## Workflow Strategy
-1. **Discover**: Run with `--schema` to see what artifacts were successfully extracted. Tables with 'memory' in the name are from volatility and will not include a json/details column.
-2. **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser LIKE '%Registry%'`).
-3. **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` on `timestamp` to see what the system was doing when a specific file was created.
-4. **Unified View**: Using --evidence all (or omitting evidence) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
+- **Discover**: Run with `--schema` to see what artifacts were successfully extracted. Tables with 'memory' in the name are from volatility and will not include a json/details column.
+- **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser LIKE '%Registry%'`).
+- **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` on `timestamp` to see what the system was doing when a specific file was created.
+- **Unified View**: Using --evidence all (or omitting evidence) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
+-  **Forbid Inline Scripting for Output Parsing**: NEVER use inline Python (`python3 -c "..."`) and Regex to scrape or parse truncated terminal output. If a query returns long strings (like Base64 PowerShell commands or JSON blobs) that get truncated, you MUST use structured output formats (like JSONL) or DuckDB's native export functions to save the full results to a file in the `scratch/` directory for analysis.
+-  **Maximize Native SQL**: Leverage DuckDB's native string manipulation, regex extraction (`regexp_extract`), and decoding functions (`from_base64`) directly within your SQL queries to process data efficiently, rather than pulling raw data into Python for processing.

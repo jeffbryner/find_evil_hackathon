@@ -40,11 +40,3 @@ To track data volumes, browser history, and deleted files.
 - **Artifacts**: SRUM, Browser History, Recycle Bin.
 - **Guide**: [System Usage](references/system-usage.md)
 
-## General SIFT Workflow
-
-1. **Start Environment**: Use `init_environment.py` to spin up the SIFT container.
-2. **Initialize Case**: Use `init_case.py --case <name> <images...>` to mount evidence to `/mnt/cases/<name>/<evidence>`. (Be sure to reference ONLY disk images, not memory images since they cannot be mounted.)
-3. **Automated Triage**: Run `python triage_extractor.py --case <name> --all --background` to start automated processing in the background.
-   - **Monitor Progress**: Use `tail -f scratch/<name>/triage.log` to check status.
-   - **Fine-grained Control**: Use `--evidence <image_name>` instead of `--all` to triage specific images.
-4. **Structured Analysis**: Use the `forensic-querying` skill to perform deep analysis on the unified timelines (e.g., `fs_timeline.parquet`, `artifacts_timeline.parquet`) using DuckDB and the `query_parquet.py` utility. Refer to that skill for SQL recipes and schema documentation.

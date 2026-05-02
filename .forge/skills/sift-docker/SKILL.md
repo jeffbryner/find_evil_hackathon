@@ -21,7 +21,7 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 To maintain a single container with multiple mounted images:
 
 ### 1. Start Environment
-Initialize the shared SIFT environment:
+If needed (check for scratch/container_id.txt) initialize the shared SIFT environment:
 ```bash
 uv python init_environment.py
 ```
@@ -54,7 +54,7 @@ docker exec $(cat scratch/container_id.txt) rip.pl -r /mnt/cases/<case>/<evidenc
 ### 3. Memory Analysis
 Volatility 3 can be run against raw memory images in `/cases/images/`:
 ```bash
-docker exec $(cat scratch/container_id.txt) vol -f /cases/images/win7-32-nromanoff-memory-raw.001 windows.pslist
+docker exec $(cat scratch/container_id.txt) vol -f /cases/images/<imagename> windows.pslist
 ```
 
 ### 4. Post-Extraction Analysis

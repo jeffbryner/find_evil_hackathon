@@ -4,32 +4,37 @@ description: "Use DuckDB to run SQL queries against the extracted file metadata 
 --- 
 
 # Command: Analyze Artifacts
-# Description: Use DuckDB to run SQL queries against the extracted file metadata to find forensic anomalies.
+# Description: Uses query_parquet.py and duckDB to run SQL queries against the extracted forensic data to find forensic anomalies.
+
+Perform ad-hoc queries based on findings to follow investigative leads.
 
 ## Prerequisites
-- `scratch/file_metadata.parquet` must have been generated.
-
-## Steps
-1. Use `query_parquet.py` to run SQL queries. The table name is `file_metadata`.
-2. Investigate common persistence locations:
+- The query_parquet.py utility uses duckDB to gather all .parquet files in the scratch folder and presents them as queryable tables: `scratch/<CASEID>/**.parquet` files must have been generated.
    ```bash
-   ./helpers/query_parquet.py "SELECT file_path, mtime FROM file_metadata WHERE file_path ILIKE '%CurrentVersion/Run%' LIMIT 10"
+   find ./scratch -type f | grep ".parquet" | wc -l 
    ```
-3. Look for suspicious executables in Temp or AppData:
-   ```bash
-   ./helpers/query_parquet.py "SELECT file_path, size, crtime FROM file_metadata WHERE file_path ILIKE '%/Temp/%.exe' ORDER BY crtime DESC LIMIT 10"
-   ```
-4. Perform ad-hoc queries based on findings to follow investigative leads.
 
-## Table Schema: file_metadata
-| Column | Description |
-|---|---|
-| md5 | File MD5 hash |
-| file_path | Full path |
-| inode | Filesystem inode |
-| mode | Permissions/Type |
-| size | File size in bytes |
-| atime | Access time |
-| mtime | Modification time |
-| ctime | Change time |
-| crtime | Creation time |
+
+## Examples
+- Use `query_parquet.py` to run SQL queries via uv
+   ```bash
+   uv run ./helpers/query_parquet.py --help
+   ```
+- Examine the schemas availble to you from previous forensic artifact recovery:
+   ```bash
+   uv run ./helpers/query_parquet.py --case <CASEID> --schema
+   ```
+- Investigate common persistence locations:
+   ```bash
+   uv run ./helpers/query_parquet.py --case <CASEID> "SELECT file_path, mtime FROM file_metadata WHERE file_path ILIKE '%CurrentVersion/Run%' LIMIT 10"
+   ```
+- Look for suspicious executables in Temp or AppData:
+   ```bash
+   uv run ./helpers/query_parquet.py --case <CASEID> "SELECT file_path, size, crtime FROM file_metadata WHERE file_path ILIKE '%/Temp/%.exe' ORDER BY crtime DESC LIMIT 10"
+   ```
+
+## Table Schemas:
+View all available tables via: 
+```bash
+   uv run ./helpers/query_parquet.py --case <CASEID> --schema
+```

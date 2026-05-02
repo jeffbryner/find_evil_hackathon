@@ -79,3 +79,21 @@ List values can be access by their array position using either method:
 - SELECT timestamp, filename_path, details->>'$.strings[0]' as service_name FROM artifacts_timeline WHERE parser = 'winevtx'
 - SELECT timestamp, filename_path, json_extract_string(details,'$.strings[0]') as service_name FROM artifacts_timeline WHERE parser = 'winevtx'
 
+## 8. Decoding Base64 in SQL
+Use DuckDB's native functions to extract and decode Base64 strings directly in your query, avoiding the need for external Python scripts.
+```sql
+SELECT 
+    timestamp,
+    convert_from(from_base64(regexp_extract(message, 'EncodedCommand "([^"]+)"', 1)), 'utf-16le') as decoded_command
+FROM artifacts_timeline
+WHERE parser = 'winevtx' AND message LIKE '%EncodedCommand%'
+LIMIT 10;
+```
+
+## 9. Exporting Long Data with JSONL
+When queries return long strings that get truncated in terminal output, use the `--jsonl` flag and redirect to a file in the `scratch/` directory.
+```bash
+uv run helpers/query_parquet.py --case SRL2018 --query "SELECT timestamp, message FROM artifacts_timeline WHERE parser = 'winevtx' AND message LIKE '%powershell%';" --jsonl > scratch/SRL2018/powershell_events.jsonl
+```
+Then, you can use `read` or `fs_search` tools to examine the complete JSON objects.
+
