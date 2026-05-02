@@ -19,6 +19,10 @@ The SIFT workstation is a reproducable, known quantity for an army of forensic t
 
 ## AI Agent Requirements
 
+- **Mandate Parallel Delegation:** Whenever you discover a specific artifact requiring deep-dive extraction (e.g., a suspicious PID in memory, a deleted file MFT record, or a carved registry key), you MUST immediately use the `task` tool to launch a `sniper-forensics` sub-agent to investigate it. Do not stop your high-level timeline analysis to perform deep-dive extractions sequentially.
+- **Forbid Inline Scripting for Output Parsing:** NEVER use inline Python (`python3 -c "..."`) and Regex to scrape or parse truncated terminal output. If a query returns long strings (like Base64 PowerShell commands or JSON blobs) that get truncated, you MUST use structured output formats (like JSONL) or DuckDB's native export functions to save the full results to a file in the `scratch/` directory for analysis.
+- **Maximize Native SQL:** Leverage DuckDB's native string manipulation, regex extraction (`regexp_extract`), and decoding functions (`from_base64`) directly within your SQL queries to process data efficiently, rather than pulling raw data into Python for processing.
+
 The agent harness we will use for runtime is https://forgecode.dev.
 We will create local `.forge` agents, skills, etc for use with the forge harness. 
 References: 
