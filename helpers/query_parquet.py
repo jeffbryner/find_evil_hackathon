@@ -155,7 +155,7 @@ def main():
                 # Single evidence file
                 fpath = targets[table_name][0]
                 con.execute(
-                    f"CREATE VIEW {table_name} AS SELECT {select_clause} FROM read_parquet('{fpath}')"
+                    f"CREATE VIEW {table_name} AS SELECT {select_clause} FROM read_parquet('{fpath}', filename='filename_path')"
                 )
 
         if args.schema:
