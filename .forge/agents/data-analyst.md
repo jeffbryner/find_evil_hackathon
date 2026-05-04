@@ -1,6 +1,6 @@
 ---
 id: data-analyst
-title: "Data Analyst Specialist"
+title: "Forensic Data Analyst Specialist"
 description: Fast data analyst expert in DuckDB and Parquet. Use this agent to run high-speed SQL queries against extracted metadata to find anomalies and answer specific questions.
 reasoning:
   enabled: true
