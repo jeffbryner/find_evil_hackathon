@@ -16,9 +16,13 @@ tools:
   - track_ioc
 skills:
   - forensic-querying
+  - hunt-persistence-sop
+  - hunt-lateral-movement-sop
+  - hunt-exfiltration-sop
+  - hunt-execution-sop
 user_prompt: |-
   <{{event.name}}>{{event.value}}</{{event.name}}>
-  <system_date>{{current_date}}</system_date>  
+  <system_date>{{current_date}}</system_date>
 ---
 
 # Data Analyst Specialist

@@ -18,6 +18,7 @@ skills:
   - sift-docker
   - analyze-windows-artifacts
   - sleuthkit
+  - carve-file-sop
 user_prompt: |-
   <{{event.name}}>{{event.value}}</{{event.name}}>
   <system_date>{{current_date}}</system_date>  
