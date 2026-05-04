@@ -23,7 +23,7 @@ uv run ./helpers/query_parquet.py --case <case_name> --query "<SQL>"
 - `--jsonl`: Outputs results as JSON Lines (.jsonl). **Preferred for programmatic parsing by agents**, especially when dealing with long strings or complex data. (Note: status/info messages will go to stderr when --jsonl is chosen)
 
 ## Core Schema
-All timelines (`fs_timeline`, `artifacts_timeline`) share a standardized core schema for easy correlation:
+Filesystem timelines (`fs_timeline`, `artifacts_timeline`) share a standardized core schema for easy correlation:
 
 | Column | Type | Description |
 | --- | --- | --- |
@@ -35,10 +35,19 @@ All timelines (`fs_timeline`, `artifacts_timeline`) share a standardized core sc
 | `details` | JSON | A JSON blob containing all other artifact-specific fields. |
 | `filename_path` | VARCHAR | (Only when using `--evidence all`) Path to the source host's parquet. |
 
+
+Memory artifacts from volatility will reside in `memory_` tables like memory_pslist, memory_netscan, memory_timeliner and each carry their own schema. 
+
+The `imagename` column in every table can be used to join tables together to find evidence from a forensic image (disk/memory).
+```
+uv run ./helpers/query_parquet.py --case <CASEID> --query "SELECT * from memory_pslist p join memory_netscan n on p.imagename=p.imagename " --limit 2 --jsonl
+```
+
+
 ## Querying JSON Details
 To extract specific fields from the `details` column, use the DuckDB JSON operator `->>`:
 ```sql
-SELECT message, details->>'registry_key' as key_path 
+SELECT message, details->>'key_path' as key_path 
 FROM artifacts_timeline 
 WHERE data_type LIKE 'windows:registry%';
 ```
@@ -50,8 +59,9 @@ You can share Indicators of Compromise (IOCs) between agents using `ioc_tracker.
 ### Adding an IOC
 To track a new IOC (e.g., an IP found in memory or a malicious hash), use the tracker helper:
 ```bash
-uv run helpers/ioc_tracker.py --case <case_name> --add <type> --value <ioc_value> --source <context>
 # Example: uv run helpers/ioc_tracker.py --case SRL --add ip --value 199.73.28.114 --source memory_netscan
+uv run helpers/ioc_tracker.py --case <case_name> --add <type> --value <ioc_value> --source <context>
+
 ```
 
 ### Querying IOCs
@@ -83,5 +93,5 @@ Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippet
 - **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser LIKE '%Registry%'`).
 - **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` on `timestamp` to see what the system was doing when a specific file was created.
 - **Unified View**: Using --evidence all (or omitting evidence) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
--  **Forbid Inline Scripting for Output Parsing**: NEVER use inline Python (`python3 -c "..."`) and Regex to scrape or parse truncated terminal output. If a query returns long strings (like Base64 PowerShell commands or JSON blobs) that get truncated, you MUST use structured output formats (like JSONL) or DuckDB's native export functions to save the full results to a file in the `scratch/` directory for analysis.
--  **Maximize Native SQL**: Leverage DuckDB's native string manipulation, regex extraction (`regexp_extract`), and decoding functions (`from_base64`) directly within your SQL queries to process data efficiently, rather than pulling raw data into Python for processing.
+- **Forbid Inline Scripting for Output Parsing**: NEVER use inline Python (`python3 -c "..."`) and Regex to scrape or parse truncated terminal output. If a query returns long strings (like Base64 PowerShell commands or JSON blobs) that get truncated, you MUST use structured output formats (like JSONL) or DuckDB's native export functions to save the full results to a file in the `scratch/` directory for analysis.
+- **Maximize Native SQL**: Leverage DuckDB's native string manipulation, regex extraction (`regexp_extract`), and decoding functions (`from_base64`) directly within your SQL queries to process data efficiently, rather than pulling raw data into Python for processing.

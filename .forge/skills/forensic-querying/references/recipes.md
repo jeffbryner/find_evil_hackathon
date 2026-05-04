@@ -3,39 +3,39 @@
 Use these SQL recipes as templates for common investigative tasks.
 
 ## 1. Time-Window Clustering
-Find bursts of activity (e.g., more than 20 events per minute) to identify periods of intense attacker activity.
+Find bursts of activity (e.g., more than X events per minute) to identify periods of intense attacker activity.
 ```sql
 SELECT 
-    date_trunc('minute', timestamp) as minute_bucket, 
+    date_trunc('hour', timestamp) as hour_bucket, 
     count(*) as event_count,
     string_agg(DISTINCT parser, ', ') as artifact_types
 FROM artifacts_timeline
 GROUP BY 1
-HAVING event_count > 20
-ORDER BY minute_bucket ASC;
+HAVING event_count > 1000
+ORDER BY event_count DESC;
 ```
 
 ## 2. MACB Flag Filtering (Filesystem)
-Find files that were "Created" (B) or "Modified" (M) in a specific directory.
+Find files that were "Created" (b) or "Modified" (m) in a specific directory.
 ```sql
 SELECT timestamp, message as file_name, details->>'Type' as macb
 FROM fs_timeline
-WHERE details->>'Type' LIKE '%B%' 
+WHERE details->>'Type' LIKE '%b%' 
   AND file_name_lower LIKE '/windows/system32/%'
 ORDER BY timestamp DESC;
 ```
 
 ## 3. Lateral Movement Detection (Cross-Host)
-Find the same suspicious file name appearing across multiple hosts in the case.
+Find the same suspicious file name appearing across multiple evidence images from hosts in the case.
 ```sql
 SELECT 
     file_name_lower, 
-    count(DISTINCT filename_path) as host_count,
-    string_agg(filename_path, ', ') as host_paths
+    count(DISTINCT imagename) as image_count,
+    string_agg(imagename, ', ') as image_names
 FROM fs_timeline
-WHERE file_name_lower LIKE '%evil.exe' OR file_name_lower LIKE '%psexec%'
+WHERE file_name_lower LIKE '%powershell.exe' OR file_name_lower LIKE '%psexec%'
 GROUP BY 1
-HAVING host_count > 1;
+HAVING image_count > 1;
 ```
 
 ## 4. Correlating Execution with File Activity
@@ -44,12 +44,14 @@ See what Registry or Event Log entries occurred within 10 seconds of a specific 
 SELECT 
     art.timestamp, 
     art.message, 
-    fs.message as file_name
+    fs.message as file_name,
+    fs.details->>'Type' as macb
 FROM artifacts_timeline art
 JOIN fs_timeline fs 
   ON art.timestamp BETWEEN fs.timestamp - INTERVAL '10 seconds' 
                        AND fs.timestamp + INTERVAL '10 seconds'
-WHERE fs.file_name_lower LIKE '%.ps1';
+WHERE fs.file_name_lower LIKE '%.ps1'
+AND macb like '%c%';
 ```
 
 ## 5. Persistence Hunting
@@ -65,7 +67,8 @@ ORDER BY timestamp DESC;
 Quick inventory of what artifact data is available
 ```sql 
 SELECT parser, count(*) FROM artifacts_timeline GROUP BY parser;
-
+SELECT Plugin, count(*) from memory_timeliner group by Plugin;
+SELECT ImageFileName, count(*) from memory_pslist group by ImageFileName;
 ```
 
 ## 7. JSON access
@@ -82,18 +85,27 @@ List values can be access by their array position using either method:
 ## 8. Decoding Base64 in SQL
 Use DuckDB's native functions to extract and decode Base64 strings directly in your query, avoiding the need for external Python scripts.
 ```sql
-SELECT 
+SELECT
     timestamp,
-    convert_from(from_base64(regexp_extract(message, 'EncodedCommand "([^"]+)"', 1)), 'utf-16le') as decoded_command
-FROM artifacts_timeline
+    decode(from_base64(regexp_extract(message, 'EncodedCommand "([^"]+)"', 1)),'ignore') as decoded_command
+from artifacts_timeline 
 WHERE parser = 'winevtx' AND message LIKE '%EncodedCommand%'
-LIMIT 10;
+```
+Via the command line you'll need to escape the double quotes: 
+
+```shell 
+uv run helpers/query_parquet.py --case <CASEID> "SELECT
+    timestamp,
+    decode(from_base64(regexp_extract(message, 'EncodedCommand \"([^\"]+)\"', 1)),'ignore') as decoded_command
+from artifacts_timeline WHERE parser = 'winevtx' AND message LIKE '%EncodedCommand%'"
 ```
 
 ## 9. Exporting Long Data with JSONL
 When queries return long strings that get truncated in terminal output, use the `--jsonl` flag and redirect to a file in the `scratch/` directory.
-```bash
-uv run helpers/query_parquet.py --case SRL2018 --query "SELECT timestamp, message FROM artifacts_timeline WHERE parser = 'winevtx' AND message LIKE '%powershell%';" --jsonl > scratch/SRL2018/powershell_events.jsonl
+
+```shell
+uv run helpers/query_parquet.py --case <CASEID>  "SELECT timestamp, message FROM artifacts_timeline WHERE parser = 'winevtx' AND message LIKE '%powershell%';" --jsonl > scratch/SRL2018/powershell_events.jsonl
 ```
+
 Then, you can use `read` or `fs_search` tools to examine the complete JSON objects.
 

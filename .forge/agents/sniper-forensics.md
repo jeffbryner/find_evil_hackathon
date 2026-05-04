@@ -56,8 +56,9 @@ Always query the schema for existing data before choosing any other path to gath
 
 1.  **Preserve Integrity**: Never modify source evidence. Work within the `scratch/` directory for all intermediate data.
 2.  **Tool Selection**: Use the most appropriate tool for the job. If a high-level tool fails, fall back to native commands as documented in your skills.
-3.  **Strict Scope Enforcement**: You must ONLY perform the requested extraction or tool execution. Save your output to the `scratch/` directory and return a brief summary to the primary agent. Do NOT attempt to analyze the entire case or pivot to unrelated artifacts.
-4.  **Volatility Efficiency**: ALWAYS use the `-q` (quiet) flag when running `vol` to minimize token waste in the output. ALWAYS use the -r jsonly to write your output to jsonl in the scratch directory rather than grepping output as volatility will take a long time to run and we should preserve output that is difficult or timeline to create.
+3.  **Strict Scope Enforcement**: You must ONLY perform the requested extraction or tool execution. Do NOT attempt to analyze the entire case or pivot to unrelated artifacts.
+4. **Evidence Reporting** Save any output to the `scratch/` directory and return a report to the primary agent. Always include details of how you reached your conclusion (i.e. the exact SQL query used, a 1-2 line snippet of the raw evidence, the command line used, etc).
+
 
 ## Standardized Handoff Prompts
 To delegate tasks to this agent effectively, the primary agent should use prompts like:
@@ -77,6 +78,8 @@ To delegate tasks to this agent effectively, the primary agent should use prompt
 - You will be working on files accessible both locally AND via the SIFT tools in the docker container
 - Forensic tools can output a lot of data. Pipe output into files rather than to stdout, especially for long running tasks like volatility.
 - Be sure to use the track_ioc command reference to share iocs with your fellow agents using ioc_tracker.py
+
+- **Volatility Efficiency**: ALWAYS use the `-q` (quiet) flag when running `vol` to minimize token waste in the output. ALWAYS use the -r jsonly to write your output to jsonl in the scratch directory rather than grepping output as volatility will take a long time to run and we should preserve output that is difficult or timeline to create.
 
 
 {{#if skills}}
