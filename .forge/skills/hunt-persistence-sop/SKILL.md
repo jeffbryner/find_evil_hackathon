@@ -1,3 +1,7 @@
+---
+name: hunt-persistence-sop
+description: This skill provides a Standard Operating Procedure (SOP) for the `data-analyst` agent to hunt for common persistence mechanisms using DuckDB and Parquet.
+---
 # Hunt Persistence SOP
 
 This skill provides a Standard Operating Procedure (SOP) for the `data-analyst` agent to hunt for common persistence mechanisms using DuckDB and Parquet.

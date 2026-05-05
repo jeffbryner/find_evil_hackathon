@@ -1,3 +1,7 @@
+---
+name: hunt-execution-sop
+description: This skill provides a Standard Operating Procedure (SOP) for the `data-analyst` agent to hunt for process execution history using DuckDB and Parquet.
+---
 # Hunt Execution SOP
 
 This skill provides a Standard Operating Procedure (SOP) for the `data-analyst` agent to hunt for process execution history using DuckDB and Parquet.

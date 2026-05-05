@@ -1,3 +1,7 @@
+---
+name: hunt-exfiltration-sop
+description: This skill provides a Standard Operating Procedure (SOP) for the `data-analyst` agent to hunt for data staging and exfiltration indicators using DuckDB and Parquet.
+---
 # Hunt Exfiltration SOP
 
 This skill provides a Standard Operating Procedure (SOP) for the `data-analyst` agent to hunt for data staging and exfiltration indicators using DuckDB and Parquet.

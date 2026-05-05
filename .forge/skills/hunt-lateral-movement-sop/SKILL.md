@@ -1,3 +1,7 @@
+---
+name: hunt-lateral-movement-sop
+description: This skill provides a Standard Operating Procedure (SOP) for the `data-analyst` agent to hunt for lateral movement indicators using DuckDB and Parquet.
+---
 # Hunt Lateral Movement SOP
 
 This skill provides a Standard Operating Procedure (SOP) for the `data-analyst` agent to hunt for lateral movement indicators using DuckDB and Parquet.
