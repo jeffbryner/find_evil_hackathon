@@ -22,6 +22,7 @@ All agents MUST use this skill to centralize case knowleged and shared memory as
 2. Ingest Context: Before running any forensic tools or SQL queries, read shared_facts.md. Use the IPs, file paths, and accounts listed there to filter your initial searches and avoid re-analyzing known artifacts.
 3. Execute Task: Perform your assigned forensic analysis or SQL queries.
 4. Update the Shared Brain: When your analysis yields new hard facts (e.g., a newly discovered staging folder, a decoded base64 string, a new lateral movement IP), you MUST append this data under the appropriate header in shared_facts.md using the patch or write tool.
+5. Share IOCs in a queryable format using the track_ioc reference.
 5. Return Summary: Finally, return your conversational summary to the Case Lead.
 
 ## Rules

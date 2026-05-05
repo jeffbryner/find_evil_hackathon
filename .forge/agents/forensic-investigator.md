@@ -14,7 +14,6 @@ tools:
   - write
   - patch
   - remove
-  - shell
   - fetch
   - skill
   - todo_write
