@@ -15,8 +15,9 @@ if ! docker ps --format '{{.ID}}' | grep -q "^${CONTAINER_ID:0:12}"; then
 fi
 
 # Check mount point
-if ! docker exec "$CONTAINER_ID" ls /mnt/windows > /dev/null 2>&1; then
-    echo "[-] Warning: /mnt/windows is not accessible inside the container."
+if ! docker exec "$CONTAINER_ID" ls /mnt/cases > /dev/null 2>&1; then
+    echo "[-] Warning: /mnt/cases is not accessible inside the container."
 else
     echo "[+] SIFT container is running and evidence is mounted."
 fi
+
