@@ -3,7 +3,14 @@ name: shared-facts-sop
 description: Standard operating procedure for maintaining and utilizing the centralized case knowledge base to prevent duplicate work and share context across agents.
 ---
 # Shared Facts
-To reduce the risk of context loss, remove the cold start cost for subagents and ensure key facts are tracked, use this skill to centralize case knowleged and shared memory as the understanding of the case develops. 
+
+## Overview
+Reduce the risk of context loss, remove the cold start cost for subagents and ensure key facts are tracked as multiple agents work simultaneously.  
+
+## When to use
+All agents MUST use this skill to centralize case knowleged and shared memory as the understanding of the case develops. 
+- When starting a task
+- When completing a task
 
 ## Instructions for the Agent:
 1. Locate or Create: Upon starting your task, look for scratch/{case_name}/shared_facts.md. If it does not exist, create it with the following standardized headers:
@@ -21,4 +28,4 @@ To reduce the risk of context loss, remove the cold start cost for subagents and
   - Never overwrite existing facts; only append.
   - Keep entries concise and agent/parsing friendly (e.g., - TIMESTAMP:2018-09-06 12:00:00+00:00 IP: 108.79.235.64 DESCRIPTION: Associated with evil.exe. )
   - Add new sections if existing sections do not cover your findings
-  
+
