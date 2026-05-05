@@ -54,7 +54,7 @@ docker exec $(cat scratch/container_id.txt) rip.pl -r /mnt/cases/<case>/<evidenc
 ### 3. Memory Analysis
 Volatility 3 can be run against raw memory images in `/cases/images/`:
 ```bash
-docker exec $(cat scratch/container_id.txt) vol -f /cases/images/<imagename> windows.pslist
+docker exec $(cat scratch/container_id.txt) vol -q -f /cases/images/<imagename> windows.pslist
 ```
 
 ### 4. Post-Extraction Analysis
