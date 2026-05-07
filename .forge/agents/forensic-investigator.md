@@ -20,6 +20,7 @@ tools:
   - todo_read
 skills:
   - shared-facts-sop
+  - delegating-mission-cards-sop
 user_prompt: |-
   <{{event.name}}>{{event.value}}</{{event.name}}>
   <system_date>{{current_date}}</system_date>  
@@ -42,6 +43,7 @@ To prevent "black box" execution and keep your conterparts informed, you MUST ad
 Sub-agents are stateless and suffer from amnesia. You must enforce the **Blackboard Pattern**:
 1. **The Shared Facts File:** All hard indicators (IPs, decoded payloads, staging directories, compromised accounts) must be stored in `scratch/{case_name}/shared_facts.md`.
 2. **Enforce the SOP:** When delegating tasks, you MUST instruct your sub-agents to execute the `shared-facts-sop`. Tell them to read `shared_facts.md` before querying, and to append new findings to it before returning. This prevents agents from re-decoding the same payloads or scanning the entire disk for known staging directories.
+3. **Delegate a Mission:** When delegating you must create a **mission card** for your worker that describes the task you'd like them to perform and then hand the file off to them for execution. Refer to the SOP for details on the content.
 
 
 ## Delegation Rules (MANDATORY)
