@@ -5,28 +5,29 @@ description: Standard operating procedure delegating missions to subagents.
 # Mission Cards
 
 ## Overview
-To standardize the way tasks are delegated and executed across multiple agents, follow this standard operating procedure.
+To standardize the way tasks are delegated and executed across multiple agents, follow this standard operating procedure to coordinate tasks through mission cards.
 
 ## When to use
 All agents MUST use this skill to properly delegate and execute tasks while setting appropriate context and returning meaningful results.
+- When delegating a task
 - When starting a task
 - When completing a task
 
 ## Rules
   - Never remove mission cards, they are a record of all delegated tasks.
   - Never remove sections, append new content instead.
-  - Keep entries concise and agent/parsing friendly
+  - Keep entries concise and agent/parsing friendly (markdown todo lists for example)
 
 ## Instructions for the Delegating Agent:
-Create a new markdown file for each mission in `scratch/{case_name}/missions/` named `mission-{target_agent}-{timestamp}.md`
+Create a new markdown file for each mission in `scratch/{case_name}/missions/` named `mission-{target_agent}-{time_stamp}.md`
 
 The card MUST include the following information:
-- Target Agent
-- Mission: What are you asked to do
-- Purpose: Why are you being asked to do it
-- Background: Current Case Context
-- Your budget: a realistic estimate of time/turns/tokens your agent should spend on the mission
-- A task checklists: Format the mission cards with a literal markdown checklist that target agents must follow:
+- The Target Agent
+- Mission: What is the agent being asked to do
+- Purpose: Why are the agent being asked to do it
+- Background: Current Case Context leading to this mission
+- Budget: a realistic estimate of time/turns/tokens your agent should spend on the mission
+- Task checklists: Format the mission cards with a literal markdown checklist that target agents must follow:
 
 
 When tasking agents:
