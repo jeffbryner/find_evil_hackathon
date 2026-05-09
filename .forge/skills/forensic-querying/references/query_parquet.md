@@ -1,6 +1,6 @@
 ---
 name: query_parquet
-description: Executes a SQL query against the Parquet forensic artifact data using DuckDB.
+description: uv run ./helpers/query_parquet.py executes a SQL query against the Parquet forensic artifact data using DuckDB.
 ---
 
 # Command: Query Parquet
@@ -20,13 +20,13 @@ description: Executes a SQL query against the Parquet forensic artifact data usi
 
 
 ## Table Schemas:
-View all available tables via: 
+View all available tables and their column schema via: 
 
 ```bash
 uv run ./helpers/query_parquet.py --case <CASEID> --schema
 ```
 
-## Usage Examples
+## Basic Usage Examples
 
 - Basic query
     ```bash
@@ -38,12 +38,4 @@ uv run ./helpers/query_parquet.py --case <CASEID> --schema
     uv run helpers/query_parquet.py --case <CASEID> --query "SELECT timestamp, imagename, message FROM artifacts_timeline" --jsonl
     ```
 
-- Investigate common persistence locations:
-   ```bash
-   uv run ./helpers/query_parquet.py --case <CASEID> "SELECT file_path, mtime FROM file_metadata WHERE file_path ILIKE '%CurrentVersion/Run%' LIMIT 10"
-   ```
-- Look for suspicious executables in Temp or AppData:
-   ```bash
-   uv run ./helpers/query_parquet.py --case <CASEID> "SELECT file_path, size, crtime FROM file_metadata WHERE file_path ILIKE '%/Temp/%.exe' ORDER BY crtime DESC LIMIT 10"
-   ```
-
+See `recipies.md` for more SQL examples.

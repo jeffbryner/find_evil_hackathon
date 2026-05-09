@@ -1,6 +1,6 @@
 ---
 name: delegating-mission-cards-sop
-description: Standard operating procedure delegating missions to subagents.
+description: Standard operating procedure delegating missions to subagents. Always use this skill when delegating tasks or receiving tasks.
 ---
 # Mission Cards
 
@@ -19,7 +19,7 @@ All agents MUST use this skill to properly delegate and execute tasks while sett
   - Keep entries concise and agent/parsing friendly (markdown todo lists for example)
 
 ## Instructions for the Delegating Agent:
-Create a new markdown file for each mission in `scratch/{case_name}/missions/` named `mission-{target_agent}-{time_stamp}.md`
+Create a new markdown file for each mission in `scratch/{case_name}/missions/` named `mission-{target_agent}-{YYYY-MM-DD-HH-MM-SS}.md`
 
 The card MUST include the following information:
 - The Target Agent

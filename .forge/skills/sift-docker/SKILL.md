@@ -19,20 +19,24 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 ## Persistent Multi-Image Workflow
 
 To maintain a single container with multiple mounted images:
+### 1. Check environment
+```bash
+    .forge/skills/sift-docker/scripts/sift-check.sh
+```
 
-### 1. Start Environment
-If needed (check for scratch/container_id.txt) initialize the shared SIFT environment:
+### 2. Start Environment
+If needed (check for `scratch/container_id.txt`) initialize the shared SIFT environment:
 ```bash
 uv python init_environment.py
 ```
 
-### 2. Initialize Case & Mount Evidence
+### 3. Initialize Case & Mount Evidence
 Associate images with a case and mount them automatically:
 ```bash
 uv python init_case.py --case <case_name> <images...>
 ```
 
-### 3. Verify All Mounts
+### 4. Verify All Mounts
 ```bash
 docker exec $(cat scratch/container_id.txt) mount | grep /mnt/cases
 ```
@@ -54,7 +58,7 @@ docker exec $(cat scratch/container_id.txt) rip.pl -r /mnt/cases/<case>/<evidenc
 ### 3. Memory Analysis
 Volatility 3 can be run against raw memory images in `/cases/images/`:
 ```bash
-docker exec $(cat scratch/container_id.txt) vol -q -f /cases/images/<imagename> windows.pslist
+docker exec $(cat scratch/container_id.txt) vol -q -r jsonl -f /cases/images/<imagename> windows.pslist
 ```
 
 ### 4. Post-Extraction Analysis

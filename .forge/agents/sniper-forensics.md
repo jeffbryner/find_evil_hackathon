@@ -4,8 +4,13 @@ title: "Targeted forensic missions"
 description: Task-based expert in using common forensic tooling to target specific artifacts.
 reasoning:
   enabled: true
+  effort: medium
+  exclude: false  
 provider: vertex_ai
 model: gemini-3-flash-preview
+max_turns: 25 
+max_requests_per_turn: 10
+tool_supported: true
 tools: 
   - followup
   - fs_search

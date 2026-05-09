@@ -17,7 +17,7 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-persiste
     SELECT timestamp, imagename, message, details->>'key_path' as registry_key
     FROM artifacts_timeline
     WHERE parser = 'winreg/run'
-    ORDER BY timestamp DESC LIMIT 50;
+    ORDER BY timestamp DESC;
     ```
 
 2.  **Query Scheduled Tasks:**
@@ -25,8 +25,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-persiste
     ```sql
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
-    WHERE data_type = 'windows:evtx:record' AND message LIKE '%4698%'
-    ORDER BY timestamp DESC LIMIT 50;
+    WHERE data_type = 'windows:evtx:record' AND message ILIKE '%4698%'
+    ORDER BY timestamp DESC;
     ```
 
 3.  **Query Service Creation:**
@@ -34,8 +34,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-persiste
     ```sql
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
-    WHERE data_type = 'windows:evtx:record' AND (message LIKE '%7045%' OR message LIKE '%4697%')
-    ORDER BY timestamp DESC LIMIT 50;
+    WHERE data_type = 'windows:evtx:record' AND (message ILIKE '%7045%' OR message ILIKE '%4697%')
+    ORDER BY timestamp DESC;
     ```
 
 4.  **Analyze Findings:**

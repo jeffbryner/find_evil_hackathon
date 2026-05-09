@@ -23,7 +23,7 @@ The SIFT workstation is a reproducable, known quantity for an army of forensic t
 ## AI Agent Operating Requirements
 - **Agents must operate as a team:** There are Standard Operating Procedures (SOPs) formatted as skills that define procedures for task delegation, information sharing and case reporting. These must be followed at all times.
 
-    Key Skills:
+    Key Team Skills:
     - shared-facts-sop
     - delegating-mission-cards-sop
     

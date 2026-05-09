@@ -16,9 +16,9 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-exfiltra
     ```sql
     SELECT timestamp, imagename, message, details->>'Size' as file_size 
     FROM fs_timeline 
-    WHERE (LOWER(message) LIKE '%.zip' OR LOWER(message) LIKE '%.rar' OR LOWER(message) LIKE '%.7z' OR LOWER(message) LIKE '%.cab')
-      AND (LOWER(message) LIKE '%/temp/%' OR LOWER(message) LIKE '%/public/%' OR LOWER(message) LIKE '%/programdata/%' OR LOWER(message) LIKE '%/logs/%')
-    ORDER BY timestamp DESC LIMIT 50;
+    WHERE (message ILIKE '%.zip' OR message ILIKE '%.rar' OR message ILIKE '%.7z' OR message ILIKE '%.cab')
+      AND (message ILIKE '%/temp/%' OR message ILIKE '%/public/%' OR message ILIKE '%/programdata/%' OR message ILIKE '%/logs/%')
+    ORDER BY timestamp DESC;
     ```
 
 2.  **Query Archiving Tool Execution:**
@@ -27,8 +27,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-exfiltra
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
     WHERE data_type = 'windows:prefetch:execution' 
-      AND (LOWER(message) LIKE '%makecab.exe%' OR LOWER(message) LIKE '%7z.exe%' OR LOWER(message) LIKE '%rar.exe%' OR LOWER(message) LIKE '%zip.exe%')
-    ORDER BY timestamp DESC LIMIT 50;
+      AND (message ILIKE '%makecab.exe%' OR message ILIKE '%7z.exe%' OR message ILIKE '%rar.exe%' OR message ILIKE '%zip.exe%')
+    ORDER BY timestamp DESC;
     ```
 
 3.  **Query SRUM Network Usage:**
@@ -36,8 +36,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-exfiltra
     ```sql
     SELECT timestamp, imagename, message, details->>'bytes_sent' as bytes_sent
     FROM artifacts_timeline 
-    WHERE data_type LIKE '%srum%' AND CAST(details->>'bytes_sent' AS BIGINT) > 10000000
-    ORDER BY CAST(details->>'bytes_sent' AS BIGINT) DESC LIMIT 50;
+    WHERE data_type ILIKE '%srum%' AND CAST(details->>'bytes_sent' AS BIGINT) > 10000000
+    ORDER BY CAST(details->>'bytes_sent' AS BIGINT) DESC;
     ```
 
 4.  **Analyze Findings:**

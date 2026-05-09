@@ -1,3 +1,8 @@
+---
+name: carve-file-sop
+description: This skill provides a Standard Operating Procedure (SOP) for the `sniper-forensics` agent to recover deleted files or extract specific files from a disk image using Sleuthkit (`fls` and `icat`) within the SIFT Docker container.
+---
+
 # Carve File SOP
 
 This skill provides a Standard Operating Procedure (SOP) for the `sniper-forensics` agent to recover deleted files or extract specific files from a disk image using Sleuthkit (`fls` and `icat`) within the SIFT Docker container.

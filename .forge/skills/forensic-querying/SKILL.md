@@ -1,6 +1,6 @@
 ---
 name: forensic-querying
-description: Using the querying utilities and the prepared duckDB instance for querying/analyzing forensic artifacts.
+description: This skill provides the technical documentation and SQL recipes for analyzing forensic artifacts using the DuckDB/Parquet pipeline via the `query_parquet.py` utility. Use this if asked to analyze forensic data, parquet files, or to perform SQL queries on forensic information.
 ---
 # Forensic Querying & Data Analysis
 
@@ -35,6 +35,7 @@ Filesystem timelines (`fs_timeline`, `artifacts_timeline`) share a standardized 
 | `details` | JSON | A JSON blob containing all other artifact-specific fields. |
 | `filename_path` | VARCHAR | (Only when using `--evidence all`) Path to the source host's parquet. |
 
+The `message` column is the primary way to communicate the essence of each event in a human-readable format. It will include filenames and other relevant information about the event.
 
 Memory artifacts from volatility will reside in `memory_` tables like memory_pslist, memory_netscan, memory_timeliner and each carry their own schema. 
 

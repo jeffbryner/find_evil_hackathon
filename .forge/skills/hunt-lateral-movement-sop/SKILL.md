@@ -16,8 +16,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-lateral-
     ```sql
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
-    WHERE data_type = 'windows:evtx:record' AND message LIKE '%4624%' AND (message LIKE '%Logon Type: 3%' OR message LIKE '%Logon Type: 10%')
-    ORDER BY timestamp DESC LIMIT 50;
+    WHERE data_type = 'windows:evtx:record' AND message ILIKE '%4624%' AND (message ILIKE '%Logon Type: 3%' OR message ILIKE '%Logon Type: 10%')
+    ORDER BY timestamp DESC;
     ```
 
 2.  **Query WMI Execution:**
@@ -25,8 +25,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-lateral-
     ```sql
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
-    WHERE data_type = 'windows:prefetch:execution' AND LOWER(message) LIKE '%wmic.exe%'
-    ORDER BY timestamp DESC LIMIT 50;
+    WHERE data_type = 'windows:prefetch:execution' AND message ILIKE '%wmic.exe%'
+    ORDER BY timestamp DESC;
     ```
 
 3.  **Query Remote Service Creation:**
@@ -34,8 +34,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-lateral-
     ```sql
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
-    WHERE data_type = 'windows:evtx:record' AND message LIKE '%7045%' AND LOWER(message) LIKE '%psexec%'
-    ORDER BY timestamp DESC LIMIT 50;
+    WHERE data_type = 'windows:evtx:record' AND message ILIKE '%7045%' AND message ILIKE '%psexec%'
+    ORDER BY timestamp DESC;
     ```
 
 4.  **Analyze Findings:**

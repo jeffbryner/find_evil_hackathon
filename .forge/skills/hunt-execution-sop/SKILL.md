@@ -17,8 +17,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-executio
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
     WHERE data_type = 'windows:prefetch:execution' 
-      AND (LOWER(message) LIKE '%<TARGET_BINARY>%' OR timestamp BETWEEN '<START_TIME>' AND '<END_TIME>')
-    ORDER BY timestamp DESC LIMIT 50;
+      AND (LOWER(message) ILIKE '%<TARGET_BINARY>%' OR timestamp BETWEEN '<START_TIME>' AND '<END_TIME>')
+    ORDER BY timestamp DESC;
     ```
 
 2.  **Query AppCompatCache (Shimcache):**
@@ -27,8 +27,8 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-executio
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
     WHERE data_type = 'windows:registry:appcompatcache' 
-      AND LOWER(message) LIKE '%<TARGET_BINARY>%'
-    ORDER BY timestamp DESC LIMIT 50;
+      AND LOWER(message) ILIKE '%<TARGET_BINARY>%'
+    ORDER BY timestamp DESC;
     ```
 
 3.  **Query Process Creation Events (4688):**
@@ -36,9 +36,9 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-executio
     ```sql
     SELECT timestamp, imagename, message 
     FROM artifacts_timeline 
-    WHERE data_type = 'windows:evtx:record' AND message LIKE '%4688%' 
-      AND LOWER(message) LIKE '%<TARGET_BINARY>%'
-    ORDER BY timestamp DESC LIMIT 50;
+    WHERE data_type = 'windows:evtx:record' AND message ILIKE '%4688%' 
+      AND LOWER(message) ILIKE '%<TARGET_BINARY>%'
+    ORDER BY timestamp DESC;
     ```
 
 4.  **Analyze Findings:**
