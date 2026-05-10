@@ -26,8 +26,9 @@ The card MUST include the following information:
 - Mission: What is the agent being asked to do
 - Purpose: Why are the agent being asked to do it
 - Background: Current Case Context leading to this mission
-- Budget: a realistic estimate of time/turns/tokens your agent should spend on the mission
-- Task checklists: Format the mission cards with a literal markdown checklist that target agents must follow:
+- Budget: a realistic estimate of time/turns/tokens your agent should spend on the mission (no less than 10 turns/queries)
+- Task checklists: Format the mission cards with a literal markdown checklist that target agents must follow
+- NPS: Net Promoter Score to measure the agent's satisfaction with the task, the overall process and note any improvements needed.
 
 
 When tasking agents:
@@ -43,4 +44,5 @@ Complete the mission according to the instructions in the card and add a results
 - Your results
 - Your findings
 - Your confidence rating for each finding
+- NPS: A brief post mortem of the task, including any feedback or suggestions for improvement.
 

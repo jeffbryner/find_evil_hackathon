@@ -9,7 +9,7 @@ reasoning:
 provider: vertex_ai
 model: gemini-3-flash-preview
 max_turns: 25 
-max_requests_per_turn: 10
+max_requests_per_turn: 20
 tool_supported: true
 tools: 
   - followup
