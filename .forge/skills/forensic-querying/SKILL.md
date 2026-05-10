@@ -17,6 +17,7 @@ uv run ./helpers/query_parquet.py --case <case_name> --query "<SQL>"
 
 ### Key Flags
 - `--case <name>`: **(Required)** Specifies the case folder in `scratch/`.
+- `--query "<SQL>"`: **(Required)** The SQL query to execute.
 - `--evidence <name>|all`: Targets a specific host or aggregates all hosts in the case (Default: `all`).
 - `--schema`: Displays available tables and columns for the case. **Always run this first if you are unsure of the schema.**
 - `--limit <N>`: Limits output to N rows (Default: 50).
@@ -33,9 +34,14 @@ Filesystem timelines (`fs_timeline`, `artifacts_timeline`) share a standardized 
 | `message` | VARCHAR | Primary human-readable summary. |
 | `file_name_lower` | VARCHAR | Lowercased path/filename for case-insensitive searching. |
 | `details` | JSON | A JSON blob containing all other artifact-specific fields. |
-| `filename_path` | VARCHAR | (Only when using `--evidence all`) Path to the source host's parquet. |
+| `filename_path` | VARCHAR | Path to the source host's parquet. |
+| `imagename` | VARCHAR | Name of the forensic image file (disk/memory). Useful for joining tables. |
 
-The `message` column is the primary way to communicate the essence of each event in a human-readable format. It will include filenames and other relevant information about the event.
+The `message` column is the primary way to communicate the essence of each event in a human-readable format. 
+For the `fs_timeline` table, the `message` column will include filenames.
+For the `artifacts_timeline` table the message column will include details about the artifact event such as:
+```[HKEY_LOCAL_MACHINE\System\ControlSet002\Control\Session Manager\AppCompatCache] Cached entry: 415 Path: C:\Windows\WinSxS\x86_netfx35linq-linqwebconfig_31bf3856ad364e35_10.0.14393.0_none_286285a0465d978a\LinqWebConfig.exe```
+For the log2timeline artifacts in the `artifacts_timeline` table, the `details` column contains a wealth of information that can be queried and analyzed such as sha hashes, registry key paths and other artifact-specific data.
 
 Memory artifacts from volatility will reside in `memory_` tables like memory_pslist, memory_netscan, memory_timeliner and each carry their own schema. 
 
