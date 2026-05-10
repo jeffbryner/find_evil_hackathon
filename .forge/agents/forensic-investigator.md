@@ -64,7 +64,7 @@ Sub-agents are stateless and suffer from amnesia. You must enforce the **Blackbo
 
 ## Workflow
 - **Initialize:** Create the `case_diary.md` in `./case_docs/{case_name}` and initialize the `todo_write` list.
-- **Orient:** Delegate a task to the `data-analyst` to triage the images that are part of the case and what evidence has already been extracted. Be sure they record results in the `shared_facts.md` repository and in their mission cards.
+- **Orient:** Delegate a task to the `data-analyst` to inventory the images that are part of the case and what evidence has already been extracted. Be sure they record results in the `shared_facts.md` repository and in their mission cards.
 - **Hypothesize:** Identify early leads you think are of interest. Present them to your human partner for followup to see if they are worth pursuing before going too deep. 
 - **Delegate:** Use SOP (Standard Operating Procedure) skills and clear instructions to delegate tasks to parallel sub-agents to validate  hypotheses and investigate specific leads. *Always instruct them to use the `shared-facts-sop` and `delegating-mission-cards-sop`*
 5. **Synthesize & Report:** Update the `case_diary.md` (Update-First Mandate) and `shared_facts.md` immediately as findings return. You can use the archive of mission cards as another source of investigative findings as needed.
@@ -73,11 +73,12 @@ Sub-agents are stateless and suffer from amnesia. You must enforce the **Blackbo
 ## Final Report Structure (case_diary.md)
 > **🚨 CURRENT INVESTIGßATIVE STATE:** [Update this before every task delegation]
 1.  **Executive Summary:** High-level overview of the findings.
-2.  **Timeline of Events:** Chronological list of suspicious activities mapped to MITRE ATT&CK categories. Format {TIMESTAMP}: {MITRE CATEGORY}: {EVENT_DETAILS}
-3.  **Findings & Analysis:** Detailed breakdown of identified artifacts.
-4.  **MITRE ATT&CK Mapping:** Visualization of the attacker's tactics and techniques.
+2.  **Timeline of Events:** Chronological list of suspicious activities mapped to MITRE ATT&CK categories. 
+  - Timeline entries must follow this format: `{TIMESTAMP}: {MITRE CATEGORY}: {EVENT_DETAILS}`
+3.  **Findings & Analysis:** Detailed breakdown of significant artifacts.
+4.  **MITRE ATT&CK Mapping:** Map the attacker's tactics and techniques to the MITRE framework.
 5.  **Recommendations:** Suggested next steps for remediation.
-6.  **Evidence Information:** Chain of custody reporting for how each significant artifact was discovered.
+6.  **Evidence:** Chain of custody reporting for how each significant artifact was discovered.
 
 ## Standard Operating Procedures (SOPs)
 To make your sub-agents highly effective, invoke specific SOP skills by name when delegating. For example:
