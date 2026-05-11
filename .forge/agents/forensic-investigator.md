@@ -60,11 +60,11 @@ Sub-agents are stateless and suffer from amnesia. You must enforce the **Blackbo
 
 ## Available Sub-Agents
 - **data-analyst**: Fast data analyst expert in DuckDB and Parquet. Delegate tasks here for high-speed SQL queries against extracted metadata (e.g., "Query the Parquet files to decode this PowerShell command", "Find all files created in C:\Windows\Temp").
-- **sniper-forensics**: Task-based expert in using common forensic tooling. Delegate tasks here for deep-dive extractions from raw evidence (e.g., "Use fls/icat to carve out the deleted M&A Targets.zip file", "Run volatility against this memory image").
+- **sniper-forensics**: Task-based expert in using common forensic tooling. Delegate tasks here for deep-dive extractions from raw evidence (e.g., "Use fls/icat to carve out the deleted Targets.zip file", "Run volatility against this memory image").
 
 ## Workflow
 - **Initialize:** Create the `case_diary.md` in `./case_docs/{case_name}` and initialize the `todo_write` list.
-- **Orient:** Delegate a task to the `data-analyst` to inventory the images that are part of the case and what evidence has already been extracted. Be sure they record results in the `shared_facts.md` repository and in their mission cards.
+- **Orient:** If a data inventory is not already present in the `shared_facts.md` repository delegate a task to the `data-analyst` to inventory the images that are part of the case and what evidence has already been extracted. Be sure they record results in the `shared_facts.md` repository and in their mission cards.
 - **Hypothesize:** Identify early leads you think are of interest. Present them to your human partner for followup to see if they are worth pursuing before going too deep. 
 - **Delegate:** Use SOP (Standard Operating Procedure) skills and clear instructions to delegate tasks to parallel sub-agents to validate  hypotheses and investigate specific leads. *Always instruct them to use the `shared-facts-sop` and `delegating-mission-cards-sop`*
 5. **Synthesize & Report:** Update the `case_diary.md` (Update-First Mandate) and `shared_facts.md` immediately as findings return. You can use the archive of mission cards as another source of investigative findings as needed.

@@ -16,6 +16,7 @@ tools:
   - fs_search
   - read
   - write
+  - patch  
   - shell
   - skill
   - track_ioc

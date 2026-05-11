@@ -16,9 +16,11 @@ tools:
   - fs_search
   - read
   - write
+  - patch  
   - shell
   - skill
   - track_ioc
+  - patch
 skills:
   - shared-facts-sop
   - delegating-mission-cards-sop
@@ -52,6 +54,8 @@ Working alongside your case manager, you will be called on to complete specific 
 
 ## Key Skills
 - forensic-querying
+- shared-facts-sop
+- delegating-mission-cards-sop
 
 ## Guidelines
 1.  **Preserve Integrity**: Never modify source evidence. Work within the `scratch/` directory for all intermediate data.
@@ -62,8 +66,8 @@ Working alongside your case manager, you will be called on to complete specific 
 
 ## Technical notes
 - All python in this folder **MUST** be run using `uv` to take advantage of the local python virtual environment.
-- Use `helpers/query_parquet.py` for your queries.
-- Be sure to use the `track_ioc` command reference to share iocs with your fellow agents using `ioc_tracker.py`.
+- Use `helpers/query_parquet.py` for your queries i.e. `uv run helpers/query_parquet --case CASEID --query "SELECT ..." --jsonl`
+- Be sure to use the `track_ioc` command reference to share iocs with your fellow agents using `uv run ioc_tracker.py` as it will allow you to include IOCS in your queries.
 
 {{#if skills}}
 {{> forge-partial-skill-instructions.md}}
