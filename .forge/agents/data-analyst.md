@@ -20,7 +20,6 @@ tools:
   - shell
   - skill
   - track_ioc
-  - patch
 skills:
   - shared-facts-sop
   - delegating-mission-cards-sop
