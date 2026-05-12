@@ -120,7 +120,7 @@ def main():
 
     if not targets and not os.path.exists(os.path.join(case_path, "iocs.jsonl")):
         print(
-            f"[-] Error: No forensic artifacts found for case '{args.case}'",
+            f"[-] Error: No forensic artifacts found for the target evidence specified: {args.evidence}",
             file=sys.stderr,
         )
         sys.exit(1)
