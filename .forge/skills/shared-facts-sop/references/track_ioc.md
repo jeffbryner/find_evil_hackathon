@@ -11,16 +11,22 @@ description: Records a new Indicator of Compromise (IOC) for a case to share wit
 2. Execute `uv run helpers/ioc_tracker.py --case <case_name> --add <type> --value <value> --source <discovery_context>`.
 3. Verify that the IOC is successfully recorded (output confirms the addition).
 
-## Usage Examples
+## IOC CRUD Usage Examples
 ```bash
-• Add or Update an IOC:
+# Add or Update an IOC:
  uv run helpers/ioc_tracker.py --case my_case --add ip --value 1.2.3.4 --source "Network Log"
-• List all IOCs:
+# List all IOCs:
  uv run helpers/ioc_tracker.py --case my_case --list
-• Remove an IOC:
+# Remove an IOC:
  uv run helpers/ioc_tracker.py --case my_case --remove --value 1.2.3.4
 ```
 
-## Integration
+## Query Integration
 - Recorded IOCs are automatically available via the `iocs` view in `query_parquet.py`.
 - Other agents can join this view against their forensic timelines to find related activity.
+
+### Example query
+```
+# Use an IOC in a query to see if they are present in a piece of evidence
+uv run helpers/query_parquet.py --case <CASEID> --evidence "<DIRECTORYNAME>" "select * from iocs i join memory_netscan m on i.value = m.ForeignAddr"
+```
