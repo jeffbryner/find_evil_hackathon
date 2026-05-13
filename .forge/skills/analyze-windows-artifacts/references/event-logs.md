@@ -9,7 +9,7 @@ The `triage_extractor.py` script automatically parses critical Event Logs (Secur
 
 ```bash
 # Manual extraction via Plaso inside the container if needed:
-docker exec $(cat scratch/container_id.txt) log2timeline.py \
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) log2timeline.py \
   --artifact_filters 'WindowsEventLogs' \
   --storage_file /scratch/case/evidence/artifacts.plaso \
   /mnt/cases/case/evidence

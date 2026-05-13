@@ -9,7 +9,7 @@ The `triage_extractor.py` script automatically parses these persistence mechanis
 
 ```bash
 # Manual extraction via Plaso inside the container if needed:
-docker exec $(cat scratch/container_id.txt) log2timeline.py \
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) log2timeline.py \
   --artifact_filters 'WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache,WindowsEventLogSecurity,WindowsEventLogSystem' \
   --storage_file /scratch/case/evidence/artifacts.plaso \
   /mnt/cases/case/evidence
@@ -20,7 +20,7 @@ If specific keys are needed beyond the automated triage:
 
 ```bash
 # Export specific key via regfexport
-docker exec $(cat scratch/container_id.txt) regfexport /mnt/cases/case/evidence/Windows/System32/config/SOFTWARE \
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) regfexport /mnt/cases/case/evidence/Windows/System32/config/SOFTWARE \
   -K "Microsoft\Windows\CurrentVersion\Run"
 ```
 

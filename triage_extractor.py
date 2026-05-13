@@ -17,7 +17,7 @@ logging.basicConfig(
 
 
 class TriageExtractor:
-    def __init__(self, orchestrator, container_id, mount_path, case_name=None):
+    def __init__(self, orchestrator, container_id, mount_path, case_name):
         self.orchestrator = orchestrator
         self.container_id = container_id
         self.mount_path = mount_path
@@ -25,9 +25,10 @@ class TriageExtractor:
         # OR /cases/images/<evidence_name> for memory images
         parts = self.mount_path.split("/")
         self.evidence_name = parts[-1]
-        self.real_case_name = case_name if case_name else parts[-2]
+        self.real_case_name = case_name
+        # Host-side scratch dir: cases/<case_name>/scratch/<evidence_name>
         self.scratch_dir = os.path.join(
-            os.getcwd(), "scratch", self.real_case_name, self.evidence_name
+            os.getcwd(), "cases", self.real_case_name, "scratch", self.evidence_name
         )
         os.makedirs(self.scratch_dir, exist_ok=True)
         self.parquet_dir = os.path.join(self.scratch_dir, "parquet")
@@ -85,25 +86,27 @@ class TriageExtractor:
         """Extract filesystem timeline using fls and mactime."""
         logging.info("[*] Extracting filesystem timeline...")
 
+        # In container: /cases is cases/<case_name>
+        # Evidence is in /cases/<case_name>images/
+        # mounts at /mnt/cases/<case_name>/<evidence_basename>
+        # And ewfmount at /mnt/ewf/<case_name>/<evidence_basename>
+
         raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
 
-        cmd = f"bash -c 'mkdir -p /scratch/{self.real_case_name}/{self.evidence_name} && fls -r -m / {raw_image} > /scratch/{self.real_case_name}/{self.evidence_name}/bodyfile.txt'"
+        # Inside container, /scratch is cases/<case_name>/scratch
+        cmd = f"bash -c 'mkdir -p /scratch/{self.evidence_name} && fls -r -m / {raw_image} > /scratch/{self.evidence_name}/bodyfile.txt'"
         self.orchestrator.execute(cmd)
 
-        cmd = f"bash -c 'mactime -b /scratch/{self.real_case_name}/{self.evidence_name}/bodyfile.txt -z UTC -d > /scratch/{self.real_case_name}/{self.evidence_name}/fs_timeline.csv'"
+        cmd = f"bash -c 'mactime -b /scratch/{self.evidence_name}/bodyfile.txt -z UTC -d > /scratch/{self.evidence_name}/fs_timeline.csv'"
         self.orchestrator.execute(cmd)
 
     def _extract_windows_artifacts(self):
         """Extract Windows-specific artifacts (Registry, EVTX, MFT) into a unified timeline."""
         logging.info("[*] Extracting Windows artifacts...")
 
-        # Paths for Plaso
-        plaso_storage = (
-            f"/scratch/{self.real_case_name}/{self.evidence_name}/artifacts.plaso"
-        )
-        jsonl_output = (
-            f"/scratch/{self.real_case_name}/{self.evidence_name}/artifacts.jsonl"
-        )
+        # Paths for Plaso (inside container)
+        plaso_storage = f"/scratch/{self.evidence_name}/artifacts.plaso"
+        jsonl_output = f"/scratch/{self.evidence_name}/artifacts.jsonl"
 
         # 1. Targeted Registry and Event Log Artifacts
         logging.info(
@@ -124,7 +127,6 @@ class TriageExtractor:
         # MFT
         logging.info("[*] Extracting MFT...")
         raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
-        # We need to find the offset again or use the one from mount
         output, _ = self.orchestrator.execute("mount")
         offset = 0
         for line in output.splitlines():
@@ -135,21 +137,17 @@ class TriageExtractor:
 
         if offset > 0:
             self.orchestrator.execute(
-                f"bash -c 'icat -o {offset} {raw_image} 0 > /scratch/{self.real_case_name}/{self.evidence_name}/MFT'"
+                f"bash -c 'icat -o {offset} {raw_image} 0 > /scratch/{self.evidence_name}/MFT'"
             )
         else:
             self.orchestrator.execute(
-                f"bash -c 'icat {raw_image} 0 > /scratch/{self.real_case_name}/{self.evidence_name}/MFT'"
+                f"bash -c 'icat {raw_image} 0 > /scratch/{self.evidence_name}/MFT'"
             )
 
     def _extract_linux_artifacts(self):
         """Extract Linux-specific artifacts."""
         logging.info("[*] Extracting Linux artifacts...")
-        linux_dir = os.path.join(self.scratch_dir, "linux")
-        os.makedirs(linux_dir, exist_ok=True)
-        self.orchestrator.execute(
-            f"mkdir -p /scratch/{self.real_case_name}/{self.evidence_name}/linux"
-        )
+        self.orchestrator.execute(f"mkdir -p /scratch/{self.evidence_name}/linux")
 
         files = [
             "/etc/passwd",
@@ -160,29 +158,45 @@ class TriageExtractor:
         ]
         for f in files:
             self.orchestrator.execute(
-                f"cp {self.mount_path}{f} /scratch/{self.real_case_name}/{self.evidence_name}/linux/ 2>/dev/null || true"
+                f"cp {self.mount_path}{f} /scratch/{self.evidence_name}/linux/ 2>/dev/null || true"
             )
 
     def _extract_memory_artifacts(self):
-        """Extract artifacts from a memory image using Volatility 3."""
-        logging.info("[*] Extracting memory artifacts...")
+        """Extract artifacts from a memory image using Volatility 3 locally."""
+        logging.info("[*] Extracting memory artifacts LOCALLY...")
 
-        # Volatility 3 commands
-        # We run silently (-q), offline (--offline), and output jsonl (-r jsonl)
+        # Evidence path on host: cases/<case_name>/images/<evidence_name>
+        local_evidence_path = os.path.join(
+            "cases", self.real_case_name, "images", self.evidence_name
+        )
+
         plugins = [
             ("windows.netscan.NetScan", "netscan.jsonl"),
             ("windows.pslist.PsList", "pslist.jsonl"),
+            ("windows.timeliner.Timeliner", "timeliner.jsonl"),
         ]
 
         for plugin, output_file in plugins:
-            logging.info(f"[*] Running Volatility plugin: {plugin}...")
-            output_path = (
-                f"/scratch/{self.real_case_name}/{self.evidence_name}/{output_file}"
-            )
-            cmd = (
-                f"bash -c 'vol -f {self.mount_path} -r jsonl {plugin} > {output_path}'"
-            )
-            self.orchestrator.execute(cmd)
+            logging.info(f"[*] Running Volatility plugin locally: {plugin}...")
+            output_path = os.path.join(self.scratch_dir, output_file)
+
+            # Run with uv run vol
+            cmd = [
+                "uv",
+                "run",
+                "vol",
+                "-f",
+                local_evidence_path,
+                "-r",
+                "jsonl",
+                plugin,
+            ]
+            try:
+                with open(output_path, "w") as f:
+                    subprocess.run(cmd, stdout=f, check=True)
+                logging.info(f"[+] Volatility output saved to {output_path}")
+            except subprocess.CalledProcessError as e:
+                logging.error(f"[-] Volatility failed for {plugin}: {e}")
 
     def _convert_to_parquet(self):
         """Convert all extracted artifacts (CSV and JSONL) to Parquet using DuckDB."""
@@ -195,7 +209,6 @@ class TriageExtractor:
             parquet_path = os.path.join(self.parquet_dir, "fs_timeline.parquet")
             logging.info(f"[*] Converting fs_timeline.csv to Parquet...")
             try:
-                # Extract Big Five + file_name_lower, pack the rest into JSON 'details'
                 sql = f"""
                 COPY (
                     SELECT 
@@ -226,7 +239,6 @@ class TriageExtractor:
             parquet_path = os.path.join(self.parquet_dir, "artifacts_timeline.parquet")
             logging.info(f"[*] Converting artifacts.jsonl to Parquet...")
             try:
-                # Use read_json_objects to avoid schema bloat, extract Big Five, pack rest into JSON 'details'
                 sql = f"""
                 COPY (
                     SELECT 
@@ -244,9 +256,28 @@ class TriageExtractor:
             except Exception as e:
                 logging.error(f"[-] Failed to convert unified artifacts: {e}")
 
-        # 3. Other CSVs (if any)
+        # 3. Memory artifacts from Volatility (JSONL)
+        for file in ["pslist.jsonl", "netscan.jsonl", "timeliner.jsonl"]:
+            jsonl_path = os.path.join(self.scratch_dir, file)
+            if os.path.exists(jsonl_path):
+                parquet_name = f"memory_{file.replace('.jsonl', '.parquet')}"
+                parquet_path = os.path.join(self.parquet_dir, parquet_name)
+                logging.info(f"[*] Converting {file} to Parquet...")
+                try:
+                    con.execute(
+                        f"COPY (SELECT * FROM read_json_auto('{jsonl_path}')) TO '{parquet_path}' (FORMAT PARQUET)"
+                    )
+                    logging.info(f"[+] Created {parquet_path}")
+                except Exception as e:
+                    logging.error(f"[-] Failed to convert {file}: {e}")
+
+        # 4. Other CSVs (if any)
         for file in os.listdir(self.scratch_dir):
-            if file.endswith(".csv") and file != "fs_timeline.csv":
+            if (
+                file.endswith(".csv")
+                and file != "fs_timeline.csv"
+                and not file.startswith("memory_")
+            ):
                 csv_path = os.path.join(self.scratch_dir, file)
                 parquet_path = os.path.join(
                     self.parquet_dir, file.replace(".csv", ".parquet")
@@ -255,22 +286,6 @@ class TriageExtractor:
                 try:
                     con.execute(
                         f"COPY (SELECT * FROM read_csv_auto('{csv_path}', ignore_errors=true)) TO '{parquet_path}' (FORMAT PARQUET)"
-                    )
-                    logging.info(f"[+] Created {parquet_path}")
-                except Exception as e:
-                    logging.error(f"[-] Failed to convert {file}: {e}")
-
-        # 4. Volatility JSONL output
-        for file in ["pslist.jsonl", "netscan.jsonl"]:
-            jsonl_path = os.path.join(self.scratch_dir, file)
-            if os.path.exists(jsonl_path):
-                parquet_name = f"memory_{file.replace('.jsonl', '.parquet')}"
-                parquet_path = os.path.join(self.parquet_dir, parquet_name)
-                logging.info(f"[*] Converting {file} to Parquet...")
-                try:
-                    # Volatility JSONL output is very structured and clean
-                    con.execute(
-                        f"COPY (SELECT * FROM read_json_auto('{jsonl_path}')) TO '{parquet_path}' (FORMAT PARQUET)"
                     )
                     logging.info(f"[+] Created {parquet_path}")
                 except Exception as e:
@@ -301,17 +316,18 @@ def main():
 
     args = parser.parse_args()
 
+    case_scratch_dir = os.path.join("cases", args.case, "scratch")
+    container_id_file = os.path.join(case_scratch_dir, "container_id.txt")
+
     if args.background:
-        # Re-run the current script without the --background flag
         cmd = [sys.executable, sys.argv[0], "--case", args.case]
         if args.all:
             cmd.append("--all")
         elif args.evidence:
             cmd.extend(["--evidence"] + args.evidence)
 
-        log_dir = os.path.join("scratch", args.case)
-        os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, "triage.log")
+        os.makedirs(case_scratch_dir, exist_ok=True)
+        log_file = os.path.join(case_scratch_dir, "triage.log")
 
         logging.info(
             f"[*] Launching triage extraction in background for case: {args.case}"
@@ -328,17 +344,19 @@ def main():
         sys.exit(0)
 
     # Synchronous processing
-    if not os.path.exists("scratch/container_id.txt"):
-        logging.error("[-] Container ID not found. Run init_case.py first.")
+    if not os.path.exists(container_id_file):
+        logging.error(
+            f"[-] Container ID not found at {container_id_file}. Run init_case.py first."
+        )
         sys.exit(1)
 
-    with open("scratch/container_id.txt", "r") as f:
+    with open(container_id_file, "r") as f:
         container_id = f.read().strip()
 
-    orchestrator = SIFTOrchestrator()
+    orchestrator = SIFTOrchestrator(case_name=args.case)
     orchestrator.container = orchestrator.client.containers.get(container_id)
 
-    # Discover mounts for the case
+    # Discover mounts for the case inside the container
     case_path = f"/mnt/cases/{args.case}"
     output, _ = orchestrator.execute(
         f"find {case_path} -maxdepth 1 -mindepth 1 -type d"

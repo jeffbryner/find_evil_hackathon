@@ -23,6 +23,7 @@ Analyze a RAM image to find live activity and hidden threats using **Volatility 
 4. **Symbol Tables**: Volatility 3 automatically handles symbols; you do not need to specify a profile.
 5. **Reduce noise**: ALWAYS run silently (-q)
 6. **Import to parquet**: Import as duckDB accessible parquet via: COPY (SELECT * FROM read_json_auto('{jsonl_path}')) TO '{parquet_path}' (FORMAT PARQUET)
+7. **Local Execution**: Run locally using `uv run vol`.
 
 ## 1. Process Enumeration
 - **`windows.pslist.PsList`**: Walk the linked list of processes (fast, but misses hidden).
@@ -30,17 +31,18 @@ Analyze a RAM image to find live activity and hidden threats using **Volatility 
 - **`windows.pstree.PsTree`**: Visualize parent-child relationships.
 
 ```bash
-# Run psscan via docker and output to jsonl
-docker exec $(cat scratch/container_id.txt) vol -q \
-  -f /evidence/memdump.mem -r jsonl windows.psscan > scratch/psscan.jsonl
+# Run psscan locally and output to jsonl
+uv run vol -q \
+  -f cases/<CASE_NAME>/images/<IMAGE_NAME> -r jsonl windows.psscan > cases/<CASE_NAME>/scratch/<IMAGE_NAME>/psscan.jsonl
 ```
 
 ## 2. Network Connections
 - **`windows.netscan.NetScan`**: Find active and closed network connections (TCP/UDP).
 
 ```bash
-docker exec $(cat scratch/container_id.txt) vol -q \
-  -f /evidence/memdump.mem -r jsonl windows.netscan > scratch/netscan.jsonl
+# Run netscan locally and output to jsonl
+uv run vol -q \
+  -f cases/<CASE_NAME>/images/<IMAGE_NAME> -r jsonl windows.netscan > cases/<CASE_NAME>/scratch/<IMAGE_NAME>/netscan.jsonl
 ```
 
 ## 3. Code Injection & Malware
@@ -48,9 +50,9 @@ docker exec $(cat scratch/container_id.txt) vol -q \
 - **`windows.vadinfo.VadInfo`**: Detailed information about Virtual Address Descriptors.
 
 ```bash
-# Find injected code and dump the suspicious regions
-docker exec $(cat scratch/container_id.txt) vol -q \
-  -f /evidence/memdump.mem windows.malfind --dump
+# Find injected code and dump the suspicious regions locally
+uv run vol -q \
+  -f cases/<CASE_NAME>/images/<IMAGE_NAME> windows.malfind --dump
 ```
 
 ## 4. Extraction & Dumping
@@ -58,9 +60,9 @@ docker exec $(cat scratch/container_id.txt) vol -q \
 - **`windows.pslist.PsList --dump`**: Dump a process executable.
 
 ```bash
-# Dump a specific process by PID (space-separated for multiple)
-docker exec $(cat scratch/container_id.txt) vol -q \
-  -f /evidence/memdump.mem windows.pslist --pid 1234 --dump
+# Dump a specific process by PID (space-separated for multiple) locally
+uv run vol -q \
+  -f cases/<CASE_NAME>/images/<IMAGE_NAME> windows.pslist --pid 1234 --dump
 ```
 
 ## 5. Registry in Memory
@@ -68,6 +70,7 @@ docker exec $(cat scratch/container_id.txt) vol -q \
 - **`windows.registry.printkey.PrintKey`**: Print specific registry keys from memory.
 
 ```bash
-docker exec $(cat scratch/container_id.txt) vol -q \
-  -f /evidence/memdump.mem windows.registry.printkey --key "Software\Microsoft\Windows\CurrentVersion\Run"
+# Manual extraction via Volatility locally:
+uv run vol -q \
+  -f cases/<CASE_NAME>/images/<IMAGE_NAME> windows.registry.printkey --key "Software\Microsoft\Windows\CurrentVersion\Run"
 ```

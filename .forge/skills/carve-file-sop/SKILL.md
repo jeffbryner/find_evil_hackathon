@@ -15,14 +15,14 @@ Use this skill when the Case Lead delegates a task to "Execute the carve-file-so
 1.  **Locate the Inode (fls):**
     First, use `fls` to search the directory structure of the disk image to find the inode number of the target file.
     ```bash
-    docker exec $(cat scratch/container_id.txt) fls -r /mnt/cases/<CASE_NAME>/<IMAGE_NAME> | grep -i "<TARGET_FILE_NAME>"
+    docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) fls -r /mnt/cases/<CASE_NAME>/<IMAGE_NAME> | grep -i "<TARGET_FILE_NAME>"
     ```
     *Note: The output will look like `r/r * 12345-128-4: TargetFile.txt`. The number `12345-128-4` is the inode.*
 
 2.  **Extract the File (icat):**
     Once you have the inode, use `icat` to extract the file content and save it to the `scratch/` directory.
     ```bash
-    docker exec $(cat scratch/container_id.txt) icat /mnt/cases/<CASE_NAME>/<IMAGE_NAME> <INODE_NUMBER> > scratch/<CASE_NAME>/<OUTPUT_FILE_NAME>
+    docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) icat /mnt/cases/<CASE_NAME>/<IMAGE_NAME> <INODE_NUMBER> > scratch/<CASE_NAME>/<OUTPUT_FILE_NAME>
     ```
 
 3.  **Verify Extraction:**

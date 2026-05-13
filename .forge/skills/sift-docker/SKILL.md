@@ -9,7 +9,7 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 
 ## Core Concepts
 
-- **Container ID**: Always stored in `scratch/container_id.txt`.
+- **Container ID**: Always stored in `cases/<CASE_NAME>/scratch/container_id.txt`.
 - **Persistent Environment**: Aim to use a single SIFT container for the entire case.
 - **Evidence Mounts**: All local files are accessible in the docker image via `/cases`. Mounted filesystems live under `/mnt/cases/<case_name>/<image_name>`.
 - **Local to Container Mapping**: 
@@ -25,7 +25,7 @@ To maintain a single container with multiple mounted images:
 ```
 
 ### 2. Start Environment
-If needed (check for `scratch/container_id.txt`) initialize the shared SIFT environment:
+If needed (check for `cases/<CASE_NAME>/scratch/container_id.txt`) initialize the shared SIFT environment:
 ```bash
 uv python init_environment.py
 ```
@@ -38,7 +38,7 @@ uv python init_case.py --case <case_name> <images...>
 
 ### 4. Verify All Mounts
 ```bash
-docker exec $(cat scratch/container_id.txt) mount | grep /mnt/cases
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) mount | grep /mnt/cases
 ```
 
 ## Common Workflows
@@ -46,19 +46,19 @@ docker exec $(cat scratch/container_id.txt) mount | grep /mnt/cases
 ### 1. Executing Commands
 Use the container ID from the scratch file to run tools:
 ```bash
-docker exec $(cat scratch/container_id.txt) <command>
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) <command>
 ```
 
 ### 2. Registry Analysis
 Use `rip.pl` (RegRipper) against specific mounted images:
 ```bash
-docker exec $(cat scratch/container_id.txt) rip.pl -r /mnt/cases/<case>/<evidence>/Windows/System32/config/SOFTWARE -p run
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) rip.pl -r /mnt/cases/<case>/<evidence>/Windows/System32/config/SOFTWARE -p run
 ```
 
 ### 3. Memory Analysis
 Volatility 3 can be run against raw memory images in `/cases/images/`:
 ```bash
-docker exec $(cat scratch/container_id.txt) vol -q -r jsonl -f /cases/images/<imagename> windows.pslist
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) vol -q -r jsonl -f /cases/images/<imagename> windows.pslist
 ```
 
 ### 4. Post-Extraction Analysis

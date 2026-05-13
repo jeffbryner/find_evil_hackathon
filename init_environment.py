@@ -9,32 +9,29 @@ def main():
         description="Initialize the environment by starting the SIFT container."
     )
     parser.add_argument(
-        "--case-dir",
-        help="Root directory for the case (defaults to current directory)",
-        default=os.getcwd(),
+        "--case",
+        required=True,
+        help="Name of the forensic case",
     )
 
     args = parser.parse_args()
-    case_dir = args.case_dir
+    case_name = args.case
 
-    if not os.path.exists(case_dir):
-        print(f"[-] Case directory not found: {case_dir}")
-        sys.exit(1)
-
-    orchestrator = SIFTOrchestrator()
+    orchestrator = SIFTOrchestrator(case_name=case_name)
 
     print("[*] Initializing SIFT Environment")
-    print(f"[*] Case Root: {case_dir}")
+    print(f"[*] Case Root: {orchestrator.case_dir}")
 
     # Start container
-    success = orchestrator.start_container(case_dir)
+    success = orchestrator.start_container()
 
-    if success:
+    if success and orchestrator.container:
         print("[+] Environment Initialized successfully.")
-        print("[+] Container ID:", orchestrator.container.id[:12])
+        print("[+] Container ID:", str(orchestrator.container.id)[:12])
         # Create a simple file to track the container ID for future scripts
-        with open("scratch/container_id.txt", "w") as f:
-            f.write(orchestrator.container.id)
+        container_id_file = os.path.join(orchestrator.scratch_dir, "container_id.txt")
+        with open(container_id_file, "w") as f:
+            f.write(str(orchestrator.container.id))
     else:
         print("[-] Environment initialization failed.")
         sys.exit(1)

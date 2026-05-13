@@ -1,12 +1,12 @@
 #!/bin/bash
 # Check if SIFT container is running and evidence is mounted
 
-if [ ! -f "scratch/container_id.txt" ]; then
-    echo "[-] Error: scratch/container_id.txt not found."
+if [ ! -f "cases/<CASE_NAME>/scratch/container_id.txt" ]; then
+    echo "[-] Error: cases/<CASE_NAME>/scratch/container_id.txt not found."
     exit 1
 fi
 
-CONTAINER_ID=$(cat scratch/container_id.txt)
+CONTAINER_ID=$(cat cases/<CASE_NAME>/scratch/container_id.txt)
 
 # Check container status
 if ! docker ps --format '{{.ID}}' | grep -q "^${CONTAINER_ID:0:12}"; then

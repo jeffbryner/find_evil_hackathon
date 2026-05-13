@@ -1,29 +1,42 @@
+import argparse
 import os
+import sys
 import docker
-from helpers.sift_tools import SIFTOrchestrator, get_docker_socket
+from helpers.sift_tools import SIFTOrchestrator
 
 
 def main():
-    if not os.path.exists("scratch/container_id.txt"):
-        print("[-] Container ID not found. No container to clean up.")
+    parser = argparse.ArgumentParser(
+        description="Clean up the forensic environment by stopping the SIFT container."
+    )
+    parser.add_argument("--case", required=True, help="Name of the forensic case")
+    args = parser.parse_args()
+    case_name = args.case
+
+    orchestrator = SIFTOrchestrator(case_name=case_name)
+    container_id_file = os.path.join(orchestrator.scratch_dir, "container_id.txt")
+
+    if not os.path.exists(container_id_file):
+        print(
+            f"[-] Container ID file not found for case {case_name}. No container to clean up."
+        )
         return
 
     try:
-        with open("scratch/container_id.txt", "r") as f:
+        with open(container_id_file, "r") as f:
             container_id = f.read().strip()
 
-        orchestrator = SIFTOrchestrator()
         try:
             orchestrator.container = orchestrator.client.containers.get(container_id)
-        except docker.errors.NotFound:
+        except Exception:
             print(f"[*] Container {container_id[:12]} already gone.")
-            os.remove("scratch/container_id.txt")
+            os.remove(container_id_file)
             return
 
         orchestrator.stop()
 
-        if os.path.exists("scratch/container_id.txt"):
-            os.remove("scratch/container_id.txt")
+        if os.path.exists(container_id_file):
+            os.remove(container_id_file)
 
     except Exception as e:
         print(f"[-] Cleanup failed: {e}")

@@ -13,7 +13,7 @@ description: Extracts a filesystem timeline (bodyfile) and converts it to Parque
 1. Use `docker exec` to run `tsk_gettimes` on the raw evidence image inside the running SIFT container:
    ```bash
    # Replace <case_name> and <evidence_name> with actual names
-   docker exec $(cat scratch/container_id.txt) bash -c 'tsk_gettimes /mnt/ewf/<case_name>/<evidence_name>/ewf1 > /scratch/<case_name>/<evidence_name>/bodyfile.txt'
+   docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c 'tsk_gettimes /mnt/ewf/<case_name>/<evidence_name>/ewf1 > /scratch/<case_name>/<evidence_name>/bodyfile.txt'
    ```
 2. Convert the generated bodyfile to a Parquet file for high-speed local analysis:
    ```bash
