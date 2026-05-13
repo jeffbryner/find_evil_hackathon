@@ -1,11 +1,11 @@
 ---
 name: analyze-windows-artifacts
-description: Investigate Windows-specific forensic artifacts including persistence, execution history, file activity, and memory. Use this skill when analyzing a Windows evidence image or memory dump to answer questions like "What was executed?", "How did they stay?", and "What files were accessed?".
+description: Investigate Windows-specific forensic artifacts including persistence, execution history, file activity, and memory. Use this skill when analyzing a Windows evidence image or memory dump to answer questions like "What was executed?", "How did they stay?", and "What files were accessed?". Use the `triage` tools from the dissect framework to analyze the artifacts.
 ---
 
 # Windows Forensic Analysis Guide
 
-This skill provides a domain-oriented approach to Windows forensics, leveraging the SIFT workstation's tools. It is organized by investigative goals rather than individual tools.
+This skill provides a domain-oriented approach to Windows forensics, leveraging the SIFT workstation's tools and the set of `triage` tools offered by the dissect framework. It is organized by investigative goals rather than individual tools.
 
 ## Investigative Goals
 
@@ -40,3 +40,7 @@ To track data volumes, browser history, and deleted files.
 - **Artifacts**: SRUM, Browser History, Recycle Bin.
 - **Guide**: [System Usage](references/system-usage.md)
 
+### 7. The Dissect/triage set of tools
+This section covers the use of Dissect and triage tools for analyzing Windows forensic data.
+- **Artifacts**: Retrieval of registry entries, event logs, and other system artifacts.
+- **Guide**: [Dissect and Triage](references/dissect-triage.md)

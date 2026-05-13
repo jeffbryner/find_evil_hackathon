@@ -44,5 +44,5 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-executio
 4.  **Analyze Findings:**
     Determine the first and last time the target binary was executed. Identify the path it was executed from and any command-line arguments used.
 
-5.  **Report to Case Lead:**
+5.  **Report:**
     Return a structured timeline of the binary's execution, including the source artifact (Prefetch, AppCompatCache, EVTX) and the execution context.

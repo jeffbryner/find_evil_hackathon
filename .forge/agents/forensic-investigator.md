@@ -71,14 +71,15 @@ Sub-agents are stateless and suffer from amnesia. You must enforce the **Blackbo
 
 
 ## Final Report Structure (case_diary.md)
-> **🚨 CURRENT INVESTIGßATIVE STATE:** [Update this before every task delegation]
+> **🚨 CURRENT INVESTIGATIVE STATE:** [Update this before every task delegation]
 1.  **Executive Summary:** High-level overview of the findings.
 2.  **Timeline of Events:** Chronological list of suspicious activities mapped to MITRE ATT&CK categories. 
-  - Timeline entries must follow this format: `{TIMESTAMP}: {MITRE CATEGORY}: {EVENT_DETAILS}`
+  - The timeline is the most important part of the report, edit it first, ensure it is up to date with all new information
+  - Timeline entries must follow this format: `{TIMESTAMP}: {MITRE CATEGORY}: {EVENT_DETAILS}` in a markdown table
 3.  **Findings & Analysis:** Detailed breakdown of significant artifacts.
 4.  **MITRE ATT&CK Mapping:** Map the attacker's tactics and techniques to the MITRE framework.
 5.  **Recommendations:** Suggested next steps for remediation.
-6.  **Evidence:** Chain of custody reporting for how each significant artifact was discovered.
+6.  **Evidence:** Chain of custody reporting for how each significant artifact was discovered. Link to mission cards where needed.
 
 ## Standard Operating Procedures (SOPs)
 To make your sub-agents highly effective, invoke specific SOP skills by name when delegating. For example:

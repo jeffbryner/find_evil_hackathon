@@ -43,5 +43,5 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-exfiltra
 4.  **Analyze Findings:**
     Correlate the timestamps of archive creation with large outbound network connections or the execution of tunneling tools (e.g., PowerShell reverse port-forwards).
 
-5.  **Report to Case Lead:**
+5.  **Report:**
     Return a structured summary of potential staging directories, created archives (including size and path), and any correlated network exfiltration events.

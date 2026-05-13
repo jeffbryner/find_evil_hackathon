@@ -41,5 +41,5 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-lateral-
 4.  **Analyze Findings:**
     Correlate the source IPs from the 4624 events with the destination hosts where WMI or PsExec was executed. Identify the compromised accounts being used.
 
-5.  **Report to Case Lead:**
+5.  **Report:**
     Return a structured summary of the lateral movement paths (Source Host -> Destination Host -> Account -> Tool used).
