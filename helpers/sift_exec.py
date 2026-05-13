@@ -1,53 +1,43 @@
-#!/usr/bin/env uv run python
-# Description: Execute a command inside the SIFT container.
-# Usage: sift_exec <command>
-# Example: sift_exec fls -r /mnt/ewf/ewf1
-
-import sys
+import argparse
 import os
-
-# Ensure project root is in path to import sift_tools
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
+import sys
 import docker
-from helpers.sift_tools import get_docker_socket
+from helpers.sift_tools import SIFTOrchestrator, get_docker_socket
 
 
 def main():
-    if not os.path.exists("scratch/container_id.txt"):
-        print("[-] Error: Container not started. Run 'init_case' first.")
+    parser = argparse.ArgumentParser(
+        description="Execute a command inside the SIFT container."
+    )
+    parser.add_argument("--case", required=True, help="Name of the forensic case")
+    parser.add_argument("cmd", nargs="+", help="Command to execute")
+
+    args = parser.parse_args()
+    case_name = args.case
+    command = " ".join(args.cmd)
+
+    case_scratch_dir = os.path.join("cases", case_name, "scratch")
+    container_id_file = os.path.join(case_scratch_dir, "container_id.txt")
+
+    if not os.path.exists(container_id_file):
+        print(
+            f"[-] Error: Container not started for case {case_name}. Run 'init_case' first."
+        )
         sys.exit(1)
 
-    with open("scratch/container_id.txt", "r") as f:
+    with open(container_id_file, "r") as f:
         container_id = f.read().strip()
 
-    if len(sys.argv) < 2:
-        print("Usage: sift_exec <command>")
-        print('Example: sift_exec "fls -r /mnt/ewf/ewf1"')
-        sys.exit(1)
-
-    # Use the first argument if it's a single string, or join if they are separate
-    if len(sys.argv) == 2:
-        command = sys.argv[1]
-    else:
-        command = " ".join(sys.argv[1:])
-
+    orchestrator = SIFTOrchestrator(case_name=case_name)
     try:
-        client = docker.DockerClient(base_url=get_docker_socket())
-        container = client.containers.get(container_id)
-
-        print(f"[*] Executing in SIFT: {command}")
-        result = container.exec_run(command)
-
-        print(result.output.decode("utf-8"))
-        if result.exit_code != 0:
-            sys.exit(result.exit_code)
-
-    except Exception as e:
-        print(f"[-] Error: {e}")
+        orchestrator.container = orchestrator.client.containers.get(container_id)
+    except docker.errors.NotFound:
+        print(f"[-] Error: Container {container_id[:12]} not found.")
         sys.exit(1)
+
+    output, code = orchestrator.execute(command)
+    print(output)
+    sys.exit(code)
 
 
 if __name__ == "__main__":

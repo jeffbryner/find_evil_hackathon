@@ -36,21 +36,23 @@ def get_docker_socket():
 
 
 class SIFTOrchestrator:
-    def __init__(self, image_name="sift-volatility:pdb-cache"):
+    def __init__(self, image_name="sift-volatility:pdb-cache", case_name=None):
         # Use dynamic socket discovery
         self.client = docker.DockerClient(base_url=get_docker_socket())
         self.image_name = image_name
         self.container = None
         self.mount_point = "/mnt/evidence"
-        self.scratch_dir = os.path.join(os.getcwd(), "scratch")
+        self.case_name = case_name
+        if case_name:
+            self.case_dir = os.path.join(os.getcwd(), "cases", case_name)
+        else:
+            self.case_dir = os.getcwd()
+        self.scratch_dir = os.path.join(self.case_dir, "scratch")
         os.makedirs(self.scratch_dir, exist_ok=True)
 
-    def start_container(self, case_root=None):
+    def start_container(self):
         """Start the SIFT container with the case root mounted as read-only."""
-        if case_root is None:
-            case_root = os.getcwd()
-
-        abs_case_root = os.path.abspath(case_root)
+        abs_case_root = os.path.abspath(self.case_dir)
 
         # Platform check for Apple Silicon
         platform = "linux/amd64"
@@ -69,7 +71,8 @@ class SIFTOrchestrator:
                 privileged=True,  # Needed for mounting inside container
                 command="/bin/bash",
             )
-            print(f"[+] Container {self.container.id[:12]} started.")
+            if self.container:
+                print(f"[+] Container {self.container.id[:12]} started.")
             return True
         except Exception as e:
             print(f"[-] Failed to start container: {e}")
