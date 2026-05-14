@@ -14,7 +14,7 @@ def main():
     parser.add_argument(
         "--case", required=True, help="Name of the case (folder in scratch/)"
     )
-    
+
     action_group = parser.add_mutually_exclusive_group(required=True)
     action_group.add_argument(
         "--add",
@@ -39,11 +39,9 @@ def main():
 
     args = parser.parse_args()
 
-    case_path = os.path.join("scratch", args.case)
+    case_path = os.path.join("cases", f"{args.case}/scratch")
+
     if not os.path.exists(case_path):
-        if not os.path.exists("scratch"):
-            print("[-] Error: 'scratch/' directory does not exist.")
-            sys.exit(1)
         os.makedirs(case_path, exist_ok=True)
 
     iocs_file = os.path.join(case_path, "iocs.jsonl")
@@ -53,7 +51,7 @@ def main():
         if not os.path.exists(iocs_file):
             print(f"[*] No IOCs found for case: {args.case}")
             return
-        
+
         print(f"[*] IOCs for case: {args.case}")
         print("-" * 60)
         try:
@@ -62,7 +60,9 @@ def main():
                 for line in f:
                     if line.strip():
                         ioc = json.loads(line)
-                        print(f"Type: {ioc.get('type'):<10} Value: {ioc.get('value'):<20} Source: {ioc.get('source')}")
+                        print(
+                            f"Type: {ioc.get('type'):<10} Value: {ioc.get('value'):<20} Source: {ioc.get('source')}"
+                        )
         except Exception as e:
             print(f"[-] Error reading {iocs_file}: {e}")
         return
@@ -77,7 +77,7 @@ def main():
         if not args.source:
             print("[-] Error: --source is required when adding an IOC")
             sys.exit(1)
-        
+
         ioc_data = {
             "type": args.add,
             "value": args.value,
@@ -101,10 +101,10 @@ def main():
                                 updated = True
                             else:
                                 iocs.append(ioc)
-                    
+
                     if not updated:
                         iocs.append(ioc_data)
-                    
+
                     f.seek(0)
                     f.truncate()
                     for ioc in iocs:
@@ -129,7 +129,7 @@ def main():
         if not os.path.exists(iocs_file):
             print(f"[-] Error: {iocs_file} does not exist.")
             sys.exit(1)
-        
+
         removed = False
         iocs = []
         try:
@@ -143,7 +143,7 @@ def main():
                             removed = True
                             continue
                         iocs.append(ioc)
-                
+
                 if removed:
                     f.seek(0)
                     f.truncate()

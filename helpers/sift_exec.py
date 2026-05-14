@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 import docker
-from helpers.sift_tools import SIFTOrchestrator, get_docker_socket
+from sift_tools import SIFTOrchestrator, get_docker_socket
 
 
 def main():

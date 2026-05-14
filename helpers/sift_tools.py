@@ -72,6 +72,7 @@ class SIFTOrchestrator:
                 command="/bin/bash",
                 auto_remove=True,  # Automatically remove container on stop
                 cpu_percent=90,  # Limit CPU usage to 90%
+                name=self.case_name if self.case_name else None,
             )
             if self.container:
                 print(f"[+] Container {self.container.id[:12]} started.")

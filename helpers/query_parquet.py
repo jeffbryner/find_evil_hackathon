@@ -79,7 +79,7 @@ def main():
         description="Query forensic Parquet artifacts using DuckDB."
     )
     parser.add_argument(
-        "--case", required=True, help="Name of the case (folder in scratch/)"
+        "--case", required=True, help="Name of the case (folder in cases/)"
     )
     parser.add_argument(
         "--evidence",
@@ -110,7 +110,7 @@ def main():
     if unknown and not args.query:
         args.query = " ".join(unknown)
 
-    case_path = os.path.join("scratch", args.case)
+    case_path = os.path.join("cases", f"{args.case}/scratch")
     if not os.path.exists(case_path):
         print(f"[-] Error: Case directory not found: {case_path}", file=sys.stderr)
         sys.exit(1)
