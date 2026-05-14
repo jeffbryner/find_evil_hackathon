@@ -65,11 +65,13 @@ class SIFTOrchestrator:
                 tty=True,
                 platform=platform,
                 volumes={
-                    abs_case_root: {"bind": "/cases", "mode": "ro"},
+                    abs_case_root: {"bind": "/case", "mode": "ro"},
                     self.scratch_dir: {"bind": "/scratch", "mode": "rw"},
                 },
                 privileged=True,  # Needed for mounting inside container
                 command="/bin/bash",
+                auto_remove=True,  # Automatically remove container on stop
+                cpu_percent=90,  # Limit CPU usage to 90%
             )
             if self.container:
                 print(f"[+] Container {self.container.id[:12]} started.")
@@ -98,7 +100,7 @@ class SIFTOrchestrator:
                 f"[*] Registering memory image: {evidence_basename} (will be analyzed with Volatility)"
             )
             # Memory images are not mounted, so we return the path within the container
-            return f"/cases/{evidence_file}"
+            return f"/case/{evidence_file}"
 
         print(f"[*] Mounting evidence file: {evidence_file} for case: {case_name}")
 
@@ -111,7 +113,7 @@ class SIFTOrchestrator:
 
         # 2. Use ewfmount to mount the E01
         # evidence_file is relative to the case root (mounted at /cases)
-        ewf_cmd = f"ewfmount /cases/{evidence_file} {ewf_mount_dir}"
+        ewf_cmd = f"ewfmount /case/{evidence_file} {ewf_mount_dir}"
         output, code = self.execute(ewf_cmd)
         if code != 0:
             print(f"[-] ewfmount failed: {output}")
@@ -227,7 +229,7 @@ class SIFTOrchestrator:
             self.execute("umount -a -t ntfs")
             self.execute("umount -a -t fuse.ewf")
             self.container.stop()
-            self.container.remove()
+            # self.container.remove()
             print("[+] Container removed.")
 
 
