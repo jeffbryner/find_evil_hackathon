@@ -13,9 +13,31 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 - **Persistent Environment**: Aim to use a single SIFT container for the entire case.
 - **Evidence Mounts**: All local files are accessible in the docker image via `/cases`. Mounted filesystems live under `/mnt/cases/<case_name>/<image_name>`.
 - **Local to Container Mapping**: 
+
+| Context | Base Path | Purpose |
+| :--- | :--- | :--- |
+| **Local Host** | `cases/<case_name>/images/` | Source E01/Memory images |
+| **SIFT Container (Filesystem)** | `/mnt/cases/<case_name>/<image>/` | Direct file access (ls, cp, exiftool) |
+| **SIFT Container (Raw/EWF)** | `/mnt/ewf/<case_name>/<image>/ewf1` | Sleuthkit tools (fls, icat, mmls) |
+| **Scratch (Shared)**| `/scratch/` | Bidirectional data exchange |
+| **Project Root** | `/case/` | Read-only access to case docs/logs |
+
+- **Common Tool Locations**:
+    - **Sleuthkit**: `/usr/bin/` (`fls`, `icat`, `mmls`)
+    - **Registry**: `/usr/bin/regfexport`, `/usr/local/bin/rip.pl`
+    - **Memory**: `/usr/local/bin/vol` (Volatility 3)
+
+- **Mapping Details**:
     - `./cases/<case_name>/` (Case current working directory) -> `/case` (Read-Only in the container, write in the local host)
     - `./cases/<case_name>/scratch` (Case scratch directory) -> `/scratch` (Read-Write in both environments)
     - `./cases/<case_name>/images` (Case images directory) -> `/case/images` (Read-Only in the container, write in the local host)
+
+## ⚡ Efficiency & Budgeting
+To stay within tool call budgets and minimize token waste:
+- **Batch Commands**: ALWAYS batch related commands into a single `docker exec` call using `bash -c` or HEREDOC. 
+- **Targeted Discovery**: Avoid verbose noise like `ls -R` or recursive `fls` if a path is known. Use `find`, `stat`, or targeted `ls` instead.
+- **Internal Piping**: Run filters like `grep` inside the container (`bash -c "cmd | grep"`) to avoid sending massive raw output to the host/AI context.
+- **Orientation First**: Use 1-2 calls to verify mount points and file existence before launching heavy extraction tools.
 
 
 ## Persistent Multi-Image Workflow
@@ -73,3 +95,6 @@ Do not rely on grep or manual analysis for large datasets. Use the data-analyst 
 - **Path Issues**: Always use absolute paths within `docker exec` commands or relative paths from the container's root.
 - **EWF Mount Fails**: Check if another process is using the E01 or if the mount point is not empty.
 - **Incorrect file types**: Be sure you aren't attempting to mount a memory image like it is a disk image. 
+
+<resource>/Users/jeffbryner/development/find_evil_hackathon/.forge/skills/sift-docker/references/commands.md</resource>
+<resource>/Users/jeffbryner/development/find_evil_hackathon/.forge/skills/sift-docker/scripts/sift-check.sh</resource>

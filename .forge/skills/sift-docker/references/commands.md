@@ -2,22 +2,30 @@
 
 This reference provides common command templates for forensic analysis in the SIFT container.
 
-**Note**: you are encouraged to batch commands in a single shell call to preserve tool budgets.
-Instead of running ls, then mount, then fls sequentially, use a single shell call to gather all environment context at once. This preserves the budget for actual forensic work.
+## ⚡ Forensic Chain Templates
+Batching commands into a single execution preserves tool budget and context.
 
-### Examples: ### 
+### 1. The "Locate & Hash" Chain
+Search for a file, get its metadata, and calculate its hash in one go.
+```bash
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "find /mnt/cases -name 'target.exe' -exec ls -l {} \; -exec md5sum {} \; -exec exiftool {} \;"
+```
 
-```shell
-docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "mount; ls /mnt/cases;"
+### 2. The "Extract & Verify" Chain
+Extract a file from an image and perform initial analysis.
+```bash
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "mkdir -p /scratch/<CASE_NAME> && cp /mnt/cases/<IMAGE>/path/to/file /scratch/<CASE_NAME>/ && cd /scratch/<CASE_NAME> && md5sum file && strings file | grep -i 'keyword'"
 ```
-You can also use HEREDOC format
-```shell
-cat <<EOF | docker exec --interactive $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash
-cd /mnt
-ls cases
-mount
-EOF
+
+### 3. The "Multi-Path Orientation" Chain
+Check multiple potential locations for a file to avoid trial-and-error.
+```bash
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "ls -l /mnt/cases/<IMAGE>/Path1/file /mnt/cases/<IMAGE>/Path2/file 2>/dev/null"
 ```
+
+## ⚠️ Anti-Patterns (Avoid These)
+- **Verbose Noise**: Never run `ls -R /mnt/cases/` or recursive `fls` on a large system drive unless absolutely necessary. It will saturate the context and waste tokens.
+- **External Piping for Large Data**: Running `docker exec ... fls | grep` sends the entire file list to the host. Use `docker exec ... bash -c "fls | grep"` to filter inside the container.
 
 ## 1. File System Analysis
 ### List files with timestamps (fls)

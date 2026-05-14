@@ -14,6 +14,10 @@ F-Response is used to remotely mount physical drives and memory from target mach
 - **Drivers:** `Mnemosyne.sys`
 - **Network Activity:** Listens on TCP port `3262`. Connects back to investigator workstations (often on ports like `5682` or `33000`).
 - **Behavior:** Deploys a service named "F-Response Subject" to target hosts over SMB.
+- `Mnemosyne_x64.sys`: F-Response driver usually found at `C:\Windows\System32\Mnemosyne_x64.sys`.
+- `usboesrv.exe`: KernelPro USB over Ethernet (part of F-Response) usually found at `C:\Windows\System32\usboesrv.exe`.
+- `f-response-lm-srv.exe`: F-Response License Manager Service `C:\Program Files\F-Response\f-response-lm-srv.exe`.
+- `femc.exe`: F-Response Enterprise Management Console `C:\Program Files\F-Response\femc.exe`.
 
 ## Other Common DFIR Tools (Examples to ignore if authorized)
 - **KAPE:** `kape.exe`, `tscc.exe`, `bstrings.exe`
