@@ -173,7 +173,7 @@ class TriageExtractor:
         plugins = [
             ("windows.netscan.NetScan", "netscan.jsonl"),
             ("windows.pslist.PsList", "pslist.jsonl"),
-            ("windows.timeliner.Timeliner", "timeliner.jsonl"),
+            ("timeliner.Timeliner", "timeliner.jsonl"),
         ]
 
         for plugin, output_file in plugins:
@@ -368,16 +368,19 @@ def main():
         target_mounts = available_mounts
     elif args.evidence:
         for ev in args.evidence:
+            # Extract basename in case user passed a full path via tab completion
+            ev_basename = os.path.basename(ev)
+
             # Check if it's a directory mount
-            expected_path = f"{case_path}/{ev}"
+            expected_path = f"{case_path}/{ev_basename}"
             if expected_path in available_mounts:
                 target_mounts.append(expected_path)
-            elif "memory" in ev.lower():
+            elif "memory" in ev_basename.lower():
                 # For memory images, we assume they are in /cases/images/
-                target_mounts.append(f"/cases/images/{ev}")
+                target_mounts.append(f"/cases/images/{ev_basename}")
             else:
                 logging.error(
-                    f"[-] Evidence '{ev}' not found mounted at {expected_path}"
+                    f"[-] Evidence '{ev_basename}' not found mounted at {expected_path}"
                 )
     else:
         logging.error("[-] Must specify --all or --evidence <names>")
