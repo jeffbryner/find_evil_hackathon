@@ -199,69 +199,77 @@ class TriageExtractor:
                 logging.error(f"[-] Volatility failed for {plugin}: {e}")
 
     def _convert_to_parquet(self):
-        """Convert all extracted artifacts (CSV and JSONL) to Parquet using DuckDB."""
-        logging.info("[*] Converting extracted artifacts to Parquet...")
-        con = duckdb.connect()
+        """Convert all extracted artifacts to Parquet."""
+        convert_to_parquet(self.scratch_dir, self.parquet_dir)
 
+
+def convert_to_parquet(scratch_dir, parquet_dir, target_file=None):
+    """Convert extracted artifacts (CSV and JSONL) to Parquet using DuckDB."""
+    logging.info(f"[*] Converting artifacts in {scratch_dir} to Parquet...")
+    con = duckdb.connect()
+
+    def process_file(file):
         # 1. FS Timeline (CSV)
-        timeline_csv = os.path.join(self.scratch_dir, "fs_timeline.csv")
-        if os.path.exists(timeline_csv):
-            parquet_path = os.path.join(self.parquet_dir, "fs_timeline.parquet")
-            logging.info(f"[*] Converting fs_timeline.csv to Parquet...")
-            try:
-                sql = f"""
-                COPY (
-                    SELECT 
-                        try_strptime("Date", '%a %b %d %Y %H:%M:%S') AS timestamp,
-                        'fs:mactime' AS data_type,
-                        'mactime' AS parser,
-                        "File Name" AS message,
-                        lower("File Name") AS file_name_lower,
-                        to_json({{
-                            'Size': "Size", 
-                            'Type': "Type", 
-                            'Mode': "Mode", 
-                            'UID': "UID", 
-                            'GID': "GID", 
-                            'Meta': "Meta"
-                        }}) AS details
-                    FROM read_csv_auto('{timeline_csv}', ignore_errors=true)
-                ) TO '{parquet_path}' (FORMAT PARQUET)
-                """
-                con.execute(sql)
-                logging.info(f"[+] Created {parquet_path}")
-            except Exception as e:
-                logging.error(f"[-] Failed to convert timeline: {e}")
+        if file == "fs_timeline.csv":
+            timeline_csv = os.path.join(scratch_dir, "fs_timeline.csv")
+            if os.path.exists(timeline_csv):
+                parquet_path = os.path.join(parquet_dir, "fs_timeline.parquet")
+                logging.info(f"[*] Converting fs_timeline.csv to Parquet...")
+                try:
+                    sql = f"""
+                    COPY (
+                        SELECT 
+                            try_strptime("Date", '%a %b %d %Y %H:%M:%S') AS timestamp,
+                            'fs:mactime' AS data_type,
+                            'mactime' AS parser,
+                            "File Name" AS message,
+                            lower("File Name") AS file_name_lower,
+                            to_json({{
+                                'Size': "Size", 
+                                'Type': "Type", 
+                                'Mode': "Mode", 
+                                'UID': "UID", 
+                                'GID': "GID", 
+                                'Meta': "Meta"
+                            }}) AS details
+                        FROM read_csv_auto('{timeline_csv}', ignore_errors=true)
+                    ) TO '{parquet_path}' (FORMAT PARQUET)
+                    """
+                    con.execute(sql)
+                    logging.info(f"[+] Created {parquet_path}")
+                except Exception as e:
+                    logging.error(f"[-] Failed to convert timeline: {e}")
 
         # 2. Unified Artifacts (JSONL from Plaso)
-        artifacts_jsonl = os.path.join(self.scratch_dir, "artifacts.jsonl")
-        if os.path.exists(artifacts_jsonl):
-            parquet_path = os.path.join(self.parquet_dir, "artifacts_timeline.parquet")
-            logging.info(f"[*] Converting artifacts.jsonl to Parquet...")
-            try:
-                sql = f"""
-                COPY (
-                    SELECT 
-                        to_timestamp(CAST(json->>'timestamp' AS BIGINT) / 1000000) AT TIME ZONE 'UTC' AS timestamp,
-                        json->>'data_type' AS data_type,
-                        json->>'parser' AS parser,
-                        json->>'message' AS message,
-                        lower(COALESCE(json->>'filename', json->>'display_name')) AS file_name_lower,
-                        json_merge_patch(json, '{{"timestamp": null, "data_type": null, "parser": null, "message": null}}'::JSON) AS details
-                    FROM read_json_objects('{artifacts_jsonl}')
-                ) TO '{parquet_path}' (FORMAT PARQUET)
-                """
-                con.execute(sql)
-                logging.info(f"[+] Created {parquet_path}")
-            except Exception as e:
-                logging.error(f"[-] Failed to convert unified artifacts: {e}")
+        elif file == "artifacts.jsonl":
+            artifacts_jsonl = os.path.join(scratch_dir, "artifacts.jsonl")
+            if os.path.exists(artifacts_jsonl):
+                parquet_path = os.path.join(parquet_dir, "artifacts_timeline.parquet")
+                logging.info(f"[*] Converting artifacts.jsonl to Parquet...")
+                try:
+                    sql = f"""
+                    COPY (
+                        SELECT 
+                            to_timestamp(CAST(json->>'timestamp' AS BIGINT) / 1000000) AT TIME ZONE 'UTC' AS timestamp,
+                            json->>'data_type' AS data_type,
+                            json->>'parser' AS parser,
+                            json->>'message' AS message,
+                            lower(COALESCE(json->>'filename', json->>'display_name')) AS file_name_lower,
+                            json_merge_patch(json, '{{"timestamp": null, "data_type": null, "parser": null, "message": null}}'::JSON) AS details
+                        FROM read_json_objects('{artifacts_jsonl}')
+                    ) TO '{parquet_path}' (FORMAT PARQUET)
+                    """
+                    con.execute(sql)
+                    logging.info(f"[+] Created {parquet_path}")
+                except Exception as e:
+                    logging.error(f"[-] Failed to convert unified artifacts: {e}")
 
         # 3. Memory artifacts from Volatility (JSONL)
-        for file in ["pslist.jsonl", "netscan.jsonl", "timeliner.jsonl"]:
-            jsonl_path = os.path.join(self.scratch_dir, file)
+        elif file in ["pslist.jsonl", "netscan.jsonl", "timeliner.jsonl"]:
+            jsonl_path = os.path.join(scratch_dir, file)
             if os.path.exists(jsonl_path):
                 parquet_name = f"memory_{file.replace('.jsonl', '.parquet')}"
-                parquet_path = os.path.join(self.parquet_dir, parquet_name)
+                parquet_path = os.path.join(parquet_dir, parquet_name)
                 logging.info(f"[*] Converting {file} to Parquet...")
                 try:
                     con.execute(
@@ -271,25 +279,37 @@ class TriageExtractor:
                 except Exception as e:
                     logging.error(f"[-] Failed to convert {file}: {e}")
 
-        # 4. Other CSVs (if any)
-        for file in os.listdir(self.scratch_dir):
-            if (
-                file.endswith(".csv")
-                and file != "fs_timeline.csv"
-                and not file.startswith("memory_")
-            ):
-                csv_path = os.path.join(self.scratch_dir, file)
-                parquet_path = os.path.join(
-                    self.parquet_dir, file.replace(".csv", ".parquet")
+        # 4. Other CSVs
+        elif file.endswith(".csv") and not file.startswith("memory_"):
+            csv_path = os.path.join(scratch_dir, file)
+            parquet_path = os.path.join(parquet_dir, file.replace(".csv", ".parquet"))
+            logging.info(f"[*] Converting {file} to Parquet...")
+            try:
+                con.execute(
+                    f"COPY (SELECT * FROM read_csv_auto('{csv_path}', ignore_errors=true)) TO '{parquet_path}' (FORMAT PARQUET)"
                 )
-                logging.info(f"[*] Converting {file} to Parquet...")
-                try:
-                    con.execute(
-                        f"COPY (SELECT * FROM read_csv_auto('{csv_path}', ignore_errors=true)) TO '{parquet_path}' (FORMAT PARQUET)"
-                    )
-                    logging.info(f"[+] Created {parquet_path}")
-                except Exception as e:
-                    logging.error(f"[-] Failed to convert {file}: {e}")
+                logging.info(f"[+] Created {parquet_path}")
+            except Exception as e:
+                logging.error(f"[-] Failed to convert {file}: {e}")
+
+    if target_file:
+        process_file(target_file)
+    else:
+        # Standard flow: process all known files in scratch_dir
+        files_to_check = [
+            "fs_timeline.csv",
+            "artifacts.jsonl",
+            "pslist.jsonl",
+            "netscan.jsonl",
+            "timeliner.jsonl",
+        ]
+        # Add all other CSVs found in the directory
+        for f in os.listdir(scratch_dir):
+            if f.endswith(".csv") and f not in files_to_check:
+                files_to_check.append(f)
+
+        for f in files_to_check:
+            process_file(f)
 
 
 def run_triage_worker(orchestrator, container_id, mount_path, case_name):
@@ -303,7 +323,7 @@ def run_triage_worker(orchestrator, container_id, mount_path, case_name):
 
 def main():
     parser = argparse.ArgumentParser(description="Extract triage artifacts.")
-    parser.add_argument("--case", required=True, help="Name of the forensic case")
+    parser.add_argument("--case", help="Name of the forensic case")
     parser.add_argument(
         "--evidence", nargs="+", help="Specific evidence names to process"
     )
@@ -313,8 +333,50 @@ def main():
     parser.add_argument(
         "--background", action="store_true", help="Run extraction in the background"
     )
+    parser.add_argument(
+        "--convert-only",
+        action="store_true",
+        help="Only run Parquet conversion on a directory",
+    )
+    parser.add_argument("--dir", help="Directory to process (used with --convert-only)")
+    parser.add_argument(
+        "--file", help="Specific file to process (used with --convert-only)"
+    )
 
     args = parser.parse_args()
+
+    # Standalone Parquet Conversion Flow
+    if args.convert_only:
+        if not args.dir and not args.file:
+            logging.error("[-] --dir or --file is required with --convert-only")
+            sys.exit(1)
+
+        if args.file and not args.dir:
+            # If only file is provided, derive dir from it
+            if os.path.exists(args.file):
+                scratch_dir = os.path.dirname(os.path.abspath(args.file))
+                target_file = os.path.basename(args.file)
+            else:
+                logging.error(f"[-] File not found: {args.file}")
+                sys.exit(1)
+        else:
+            scratch_dir = args.dir
+            target_file = args.file
+
+        if not scratch_dir:
+            logging.error("[-] Could not determine scratch directory.")
+            sys.exit(1)
+
+        parquet_dir = os.path.join(scratch_dir, "parquet")
+        os.makedirs(parquet_dir, exist_ok=True)
+
+        convert_to_parquet(scratch_dir, parquet_dir, target_file=target_file)
+        logging.info("[+] Parquet conversion complete.")
+        sys.exit(0)
+
+    if not args.case:
+        logging.error("[-] --case is required")
+        sys.exit(1)
 
     case_scratch_dir = os.path.join("cases", args.case, "scratch")
     container_id_file = os.path.join(case_scratch_dir, "container_id.txt")
