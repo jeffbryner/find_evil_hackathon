@@ -13,12 +13,14 @@ docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "mount; ls
 ## 1. Local Project to Container
 | Local Path | Container Path | Purpose |
 |---|---|---|
-| `./` | `/case/` | Project root (Source of truth) |
-| `scratch/` | `/case/scratch/` | Shared temporary storage |
-| `images/` | `/case/images/` | Forensic images |
+| `./cases/<CASEID>/` | `/case/` | Project root (Source of truth) |
+| `./cases/<CASEID>/scratch/` | `/scratch/` | Shared temporary storage |
+| `./cases/<CASEID>/images/` | `/case/images/` | Forensic images |
 
 ## 2. Evidence Mounts (Inside Container)
-Inside the container the /mnt directory will have local host images mounted by the container. We will still reference the CASEID in the mount path as a safety measure to ensure we are operating in the correct container. 
+Inside the container the /mnt directory will have local host images mounted by the container. 
+
+We will still reference the CASEID in the mount path as a safety measure to ensure we are operating in the correct container. 
 
 | Container Path | Purpose |
 |---|---|

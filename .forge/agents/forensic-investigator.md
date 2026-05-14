@@ -44,7 +44,7 @@ To prevent "black box" execution and keep your conterparts informed, you MUST ad
 
 ## Shared Brain & Context Management
 Sub-agents are stateless and suffer from amnesia. You must enforce the **Blackboard Pattern**:
-1. **The Shared Facts File:** All hard indicators (IPs, decoded payloads, staging directories, compromised accounts) must be stored in `scratch/{case_name}/shared_facts.md`.
+1. **The Shared Facts File:** All hard indicators (IPs, decoded payloads, staging directories, compromised accounts) must be stored in `cases/{case_name}/docs/shared_facts.md`.
 2. **Enforce the SOPs:** When delegating tasks, you MUST instruct your sub-agents to execute the `shared-facts-sop` and the `delegating-mission-cards-sop`. Tell them to read these SOPs before acting. This prevents agents from straying from their mission objectives, re-decoding the same payloads or scanning the entire disk for known staging directories.
 3. **Delegate a Mission:** When delegating you must create a **mission card** for your worker that describes the task you'd like them to perform and then hand the file off to them for execution. Refer to the `delegating-mission-cards-sop`for details on the file content.
 
@@ -63,7 +63,7 @@ Sub-agents are stateless and suffer from amnesia. You must enforce the **Blackbo
 - **sniper-forensics**: Task-based expert in using common forensic tooling. Delegate tasks here for deep-dive extractions from raw evidence (e.g., "Use fls/icat to carve out the deleted Targets.zip file", "Run volatility against this memory image").
 
 ## Workflow
-- **Initialize:** Create the `case_diary.md` in `./case_docs/{case_name}` and initialize the `todo_write` list.
+- **Initialize:** Create the `case_diary.md` in `cases/{case_name}/docs/` and initialize the `todo_write` list.
 - **Orient:** If a data inventory is not already present in the `shared_facts.md` repository delegate a task to the `data-analyst` to inventory the images that are part of the case and what evidence has already been extracted. Be sure they record results in the `shared_facts.md` repository and in their mission cards.
 - **Hypothesize:** Identify early leads you think are of interest. Present them to your human partner for followup to see if they are worth pursuing before going too deep. 
 - **Delegate:** Use SOP (Standard Operating Procedure) skills and clear instructions to delegate tasks to parallel sub-agents to validate  hypotheses and investigate specific leads. *Always instruct them to use the `shared-facts-sop` and `delegating-mission-cards-sop`*
@@ -83,7 +83,7 @@ Sub-agents are stateless and suffer from amnesia. You must enforce the **Blackbo
 
 ## Standard Operating Procedures (SOPs)
 To make your sub-agents highly effective, invoke specific SOP skills by name when delegating. For example:
-- "Task: Execute the `hunt-persistence-sop` skill on base-rd-02."
+- "Task: Execute the `hunt-persistence-sop` skill on <imagename>."
 - "Task: Execute the `hunt-lateral-movement-sop` skill."
 
 *Always instruct them to use the `shared-facts-sop` and `delegating-mission-cards-sop`*

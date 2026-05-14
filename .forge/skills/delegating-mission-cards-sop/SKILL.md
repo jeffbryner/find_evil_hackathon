@@ -20,7 +20,7 @@ All agents **MUST** use this skill to properly delegate and execute tasks while 
 
 ## Instructions for the Delegating Agent:
 ### Mission Cards
-Create a new markdown file for each mission in `scratch/{case_name}/missions/` using a sequential counter and a short semantic description. 
+Create a new markdown file for each mission in `cases/{case_name}/docs/missions/` using a sequential counter and a short semantic description. 
 Name the file: `{001..999}-mission-{target_agent}-{short-task-description}.md`
 (Example: `001-mission-data-analyst-deletion-timeline.md`, `002-mission-sniper-forensics-carve-zip.md`)
 
@@ -40,7 +40,7 @@ The card **MUST** include the following information:
 ### Delegation Conversation
 When tasking sub agents with a delegated task:
 1. Use Explicit I/O Instructions in the Task Prompt: Instead of just handing them a file path, put the exact output requirements directly into the tool invocation.
-  ⁎ Example: "Your mission is at scratch/.../mission.md. You MUST use the patch tool to append your final report when you are done to conserve tokens. Do not just return it in the chat."
+  ⁎ Example: "Your mission is at /path/to/.../mission.md. You MUST use the patch tool to append your final report when you are done to conserve tokens. Do not just return it in the chat."
 2. Phase Separation (Micro-Missions): Do not combine heavy schema orientation with deep-dive data extraction. If orientation is needed, make it a separate prerequisite mission card.
 3. Strict Tool Call Budgets & Fail-Fast: To stop them from endlessly querying, enforce "Effort-Boxing" directly in the task description using tool call limits and explicit fail-fast conditions.
 

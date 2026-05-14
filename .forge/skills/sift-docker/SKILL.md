@@ -9,12 +9,14 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 
 ## Core Concepts
 
-- **Container ID**: Always stored in `cases/<CASE_NAME>/scratch/container_id.txt`.
+- **Container ID**: Always stored locally in `cases/<CASE_NAME>/scratch/container_id.txt`.
 - **Persistent Environment**: Aim to use a single SIFT container for the entire case.
 - **Evidence Mounts**: All local files are accessible in the docker image via `/cases`. Mounted filesystems live under `/mnt/cases/<case_name>/<image_name>`.
 - **Local to Container Mapping**: 
-    - `.` (CWD) -> `/cases` (Read-Only)
-    - `./scratch` -> `/scratch` (Read-Write)
+    - `./cases/<case_name>/` (Case current working directory) -> `/case` (Read-Only in the container, write in the local host)
+    - `./cases/<case_name>/scratch` (Case scratch directory) -> `/scratch` (Read-Write in both environments)
+    - `./cases/<case_name>/images` (Case images directory) -> `/case/images` (Read-Only in the container, write in the local host)
+
 
 ## Persistent Multi-Image Workflow
 
@@ -48,25 +50,26 @@ Use the container ID from the scratch file to run tools:
 ```bash
 docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) <command>
 ```
+Remember that the command is executed in the context of the container. The output of the command would be processed locally (piping to grep for example.) See `references.md` for examples of running multiple commands in a single execution using methods like HEREDOC.
 
-### 2. Registry Analysis
-Use `rip.pl` (RegRipper) against specific mounted images:
+### Registry Analysis
+See the `analyze-windows-artifacts` skill for specific commands, but as an example:
 ```bash
-docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) rip.pl -r /mnt/cases/<case>/<evidence>/Windows/System32/config/SOFTWARE -p run
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) regfexport -r -i /mnt/cases/<case_name>/<image_name>/Windows/System32/config/SYSTEM -o /scratch/system_hives/
 ```
 
 ### 3. Memory Analysis
-Volatility 3 can be run against raw memory images in `/cases/images/`:
+Volatility 3 can be run against raw memory images in `/case/images/`:
 ```bash
-docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) vol -q -r jsonl -f /cases/images/<imagename> windows.pslist
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) vol -q -r jsonl -f /case/images/<imagename> windows.pslist
 ```
 
 ### 4. Post-Extraction Analysis
-Once artifacts are extracted to Parquet format (via `triage_extractor.py`), use the `forensic-querying` skill to perform high-speed SQL analysis across the evidence.
+Once artifacts are extracted to Parquet format (via `triage_extractor.py`), use the `forensic-querying` skill to perform high-speed SQL analysis across the evidence. 
+Do not rely on grep or manual analysis for large datasets. Use the data-analyst agent to query Parquet files with DuckDB for efficient analysis.
 
 ## Troubleshooting
 
-- **Mount Denied**: Ensure the container is started with `--privileged`.
 - **Path Issues**: Always use absolute paths within `docker exec` commands or relative paths from the container's root.
 - **EWF Mount Fails**: Check if another process is using the E01 or if the mount point is not empty.
 - **Incorrect file types**: Be sure you aren't attempting to mount a memory image like it is a disk image. 

@@ -107,10 +107,10 @@ from artifacts_timeline WHERE parser = 'winevtx' AND message LIKE '%EncodedComma
 ```
 
 ## Exporting Long Data with JSONL
-When queries return long strings that get truncated in terminal output, use the `--jsonl` flag and redirect to a file in the `scratch/` directory.
+When queries return long strings that get truncated in terminal output, use the `--jsonl` flag and redirect to a file in the `scratch` directory.
 
 ```shell
-uv run helpers/query_parquet.py --case <CASEID>  "SELECT timestamp, message FROM artifacts_timeline WHERE parser = 'winevtx' AND message ILIKE '%powershell%';" --jsonl > scratch/SRL2018/powershell_events.jsonl
+uv run helpers/query_parquet.py --case <CASEID>  "SELECT timestamp, message FROM artifacts_timeline WHERE parser = 'winevtx' AND message ILIKE '%powershell%';" --jsonl > /path/to/case/scratch/powershell_events.jsonl
 ```
 
 Then, you can use `read` or `fs_search` tools to examine the complete JSON objects.

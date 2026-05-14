@@ -14,7 +14,7 @@ All agents MUST use this skill to centralize case knowleged and shared memory as
 - When you've discovered a new indicator of compromise (IOC)
 
 ## Instructions for the Agent:
-1. Locate or Create: Upon starting your task, look for scratch/{case_name}/shared_facts.md. If it does not exist, create it with the following standardized headers:
+1. Locate or Create: Upon starting your task, look for cases/{case_name}/docs/shared_facts.md. If it does not exist, create it with the following standardized headers:
       * # Data Inventory
       * # Compromised Accounts
       * # Known Malicious IPs & Domains
