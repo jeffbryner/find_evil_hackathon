@@ -23,10 +23,10 @@ def convert_plaso_to_parquet(plaso_path, parquet_path, batch_size=50000):
             ("data_type", pa.string()),
             ("parser", pa.string()),
             ("message", pa.string()),
-            ("display_name", pa.string()),
             ("file_name_lower", pa.string()),
-            ("tag", pa.string()),
             ("details", pa.string()),  # JSON string
+            ("filename_path", pa.string()),
+            ("imagename", pa.string()),
         ]
     )
 
@@ -144,10 +144,10 @@ def convert_plaso_to_parquet(plaso_path, parquet_path, batch_size=50000):
                     "data_type": data_type,
                     "parser": parser,
                     "message": message,
-                    "display_name": display_name,
                     "file_name_lower": file_name_lower,
-                    "tag": tag_str,
                     "details": details_json,
+                    "filename_path": plaso_path,
+                    "imagename": os.path.basename(os.path.dirname(plaso_path)),
                 }
             )
 
