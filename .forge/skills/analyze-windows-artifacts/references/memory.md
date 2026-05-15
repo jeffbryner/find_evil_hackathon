@@ -23,7 +23,7 @@ Analyze a RAM image to find live activity and hidden threats using **Volatility 
 4. **Symbol Tables**: Volatility 3 automatically handles symbols; you do not need to specify a profile.
 5. **Reduce noise**: ALWAYS run silently (-q)
 6. **Import to parquet**: Import as duckDB accessible parquet via: COPY (SELECT * FROM read_json_auto('{jsonl_path}')) TO '{parquet_path}' (FORMAT PARQUET)
-7. **Local Execution**: Run locally using `uv run vol`.
+7. **Local Execution**: ALWAYS run Volatility locally using `uv run vol`. Do NOT attempt to run Volatility inside the `sift-docker` container.
 
 ## 1. Process Enumeration
 - **`windows.pslist.PsList`**: Walk the linked list of processes (fast, but misses hidden).

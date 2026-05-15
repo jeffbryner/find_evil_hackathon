@@ -30,9 +30,12 @@ The card **MUST** include the following information:
 - Purpose: Why are the agent being asked to do it
 - Background: Current Case Context leading to this mission
 - Budget: A strict limit on the number of **tool calls** allotted for the task (Do not use time or abstract query limits). 
-  - Mission cards **MUST** define an 'Orientation Budget' (e.g., 3 calls to find and verify the image) **AND** an 'Execution Budget' (e.g., 10 calls to extract data). 
+  - Mission cards **MUST** define 3 budget pools:
+    - `Orientation Budget` (e.g., 5 calls to find and verify the image)
+    - `Execution Budget` (e.g., 20 calls to extract data). 
+    - `Reporting Budget` (e.g., 5 calls to update the mission card with results and findings)
   - If orientation fails, the mission is aborted before execution begins.
-  - No less than 3 calls should be allocated for orientation and no less than 10 calls for execution.
+  - Allot budget in blocks of 5 calls, no less. This allows the agent to have enough calls to perform meaningful work while still enforcing discipline and focus.
 - Fail-Fast Condition: Explicit instructions on when the agent should give up (e.g., "If your first 5 working searches yield no results, stop and report negative findings. Do not guess table names or follow fruitless paths.").
 - Task checklists: Format the mission cards with a literal markdown checklist that target agents must follow
 - NPS: Net Promoter Score to measure the agent's satisfaction with the task, the overall process and note any improvements needed.
