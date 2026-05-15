@@ -87,6 +87,14 @@ def convert_plaso_to_parquet(plaso_path, parquet_path, batch_size=50000):
                 elif data_type == "fs:stat":
                     filename = event_data.get("filename", "")
                     message = f"File Stat: {filename}"
+                elif data_type == "windows:prefetch:execution":
+                    executable = event_data.get("executable", "")
+                    run_count = event_data.get("run_count", "")
+                    message = f"Prefetch: {executable} executed {run_count} times"
+                elif data_type == "windows:volume:creation":
+                    device_path = event_data.get("device_path", "")
+                    serial_number = event_data.get("serial_number", "")
+                    message = f"Volume Created: {device_path} (S/N: {serial_number})"
                 else:
                     message = display_name or "N/A"
 
