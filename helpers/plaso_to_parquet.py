@@ -146,8 +146,6 @@ def convert_plaso_to_parquet(plaso_path, parquet_path, batch_size=50000):
                     "message": message,
                     "file_name_lower": file_name_lower,
                     "details": details_json,
-                    "filename_path": plaso_path,
-                    "imagename": os.path.basename(os.path.dirname(plaso_path)),
                 }
             )
 
