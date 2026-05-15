@@ -106,7 +106,6 @@ class TriageExtractor:
 
         # Paths for Plaso (inside container)
         plaso_storage = f"/scratch/{self.evidence_name}/artifacts.plaso"
-        jsonl_output = f"/scratch/{self.evidence_name}/artifacts.jsonl"
 
         # 1. Targeted Registry and Event Log Artifacts
         logging.info(
@@ -117,11 +116,6 @@ class TriageExtractor:
             "WindowsEventLogSecurity,WindowsEventLogSystem, WindowsXMLEventLogSecurity,WindowsXMLEventLogSystem,WindowsPrefetchFiles"
         )
         cmd = f"log2timeline.py --artifact_filters '{artifacts}' --storage_file {plaso_storage} {self.mount_path}"
-        self.orchestrator.execute(cmd)
-
-        # 2. Export to JSONL for DuckDB ingestion
-        logging.info("[*] Exporting unified artifacts to JSONL...")
-        cmd = f"psort.py -o json_line -w {jsonl_output} {plaso_storage}"
         self.orchestrator.execute(cmd)
 
         # MFT
@@ -240,26 +234,23 @@ def convert_to_parquet(scratch_dir, parquet_dir, target_file=None):
                 except Exception as e:
                     logging.error(f"[-] Failed to convert timeline: {e}")
 
-        # 2. Unified Artifacts (JSONL from Plaso)
-        elif file == "artifacts.jsonl":
-            artifacts_jsonl = os.path.join(scratch_dir, "artifacts.jsonl")
-            if os.path.exists(artifacts_jsonl):
+        # 2. Unified Artifacts (from .plaso storage)
+        elif file == "artifacts.plaso":
+            plaso_file = os.path.join(scratch_dir, "artifacts.plaso")
+            if os.path.exists(plaso_file):
                 parquet_path = os.path.join(parquet_dir, "artifacts_timeline.parquet")
-                logging.info(f"[*] Converting artifacts.jsonl to Parquet...")
+                logging.info(f"[*] Converting artifacts.plaso to Parquet...")
                 try:
-                    sql = f"""
-                    COPY (
-                        SELECT 
-                            to_timestamp(CAST(json->>'timestamp' AS BIGINT) / 1000000) AT TIME ZONE 'UTC' AS timestamp,
-                            json->>'data_type' AS data_type,
-                            json->>'parser' AS parser,
-                            json->>'message' AS message,
-                            lower(COALESCE(json->>'filename', json->>'display_name')) AS file_name_lower,
-                            json_merge_patch(json, '{{"timestamp": null, "data_type": null, "parser": null, "message": null}}'::JSON) AS details
-                        FROM read_json_objects('{artifacts_jsonl}')
-                    ) TO '{parquet_path}' (FORMAT PARQUET)
-                    """
-                    con.execute(sql)
+                    # Use our optimized standalone script
+                    helper_script = os.path.join("helpers", "plaso_to_parquet.py")
+                    cmd = [sys.executable, helper_script, plaso_file, parquet_path]
+                    # Log the output for visibility
+                    result = subprocess.run(
+                        cmd, check=True, capture_output=True, text=True
+                    )
+                    if result.stdout:
+                        for line in result.stdout.splitlines():
+                            logging.info(f"[plaso_to_parquet] {line}")
                     logging.info(f"[+] Created {parquet_path}")
                 except Exception as e:
                     logging.error(f"[-] Failed to convert unified artifacts: {e}")
@@ -298,7 +289,7 @@ def convert_to_parquet(scratch_dir, parquet_dir, target_file=None):
         # Standard flow: process all known files in scratch_dir
         files_to_check = [
             "fs_timeline.csv",
-            "artifacts.jsonl",
+            "artifacts.plaso",
             "pslist.jsonl",
             "netscan.jsonl",
             "timeliner.jsonl",
