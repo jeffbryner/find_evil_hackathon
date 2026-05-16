@@ -97,8 +97,27 @@ class TriageExtractor:
         cmd = f"bash -c 'mkdir -p /scratch/{self.evidence_name} && fls -r -m / {raw_image} > /scratch/{self.evidence_name}/bodyfile.txt'"
         self.orchestrator.execute(cmd)
 
-        cmd = f"bash -c 'mactime -b /scratch/{self.evidence_name}/bodyfile.txt -z UTC -d > /scratch/{self.evidence_name}/fs_timeline.csv'"
-        self.orchestrator.execute(cmd)
+        # Run mactime replacement LOCALLY for speed and to avoid timeouts
+        bodyfile_local = os.path.join(self.scratch_dir, "bodyfile.txt")
+        timeline_local = os.path.join(self.scratch_dir, "fs_timeline.csv")
+        logging.info(f"[*] Running local mactime replacement on {bodyfile_local}...")
+
+        mactime_cmd = [
+            "uv",
+            "run",
+            "helpers/mactime.py",
+            "-b",
+            bodyfile_local,
+            "-z",
+            "UTC",
+            "-d",
+        ]
+        try:
+            with open(timeline_local, "w") as f:
+                subprocess.run(mactime_cmd, stdout=f, check=True)
+            logging.info(f"[+] Filesystem timeline saved to {timeline_local}")
+        except subprocess.CalledProcessError as e:
+            logging.error(f"[-] Local mactime failed: {e}")
 
     def _extract_windows_artifacts(self):
         """Extract Windows-specific artifacts (Registry, EVTX, MFT) into a unified timeline."""
@@ -419,6 +438,17 @@ def main():
     target_mounts = []
     if args.all:
         target_mounts = available_mounts
+        # Automatically discover memory images which aren't mounted like disk images
+        local_images_dir = os.path.join("cases", args.case, "images")
+        if os.path.exists(local_images_dir):
+            for f in os.listdir(local_images_dir):
+                if "memory" in f.lower() and os.path.isfile(
+                    os.path.join(local_images_dir, f)
+                ):
+                    # Internal path should match orchestrator mapping: /case/images/filename
+                    mem_path = f"/case/images/{f}"
+                    if mem_path not in target_mounts:
+                        target_mounts.append(mem_path)
     elif args.evidence:
         for ev in args.evidence:
             # Extract basename in case user passed a full path via tab completion
@@ -429,8 +459,8 @@ def main():
             if expected_path in available_mounts:
                 target_mounts.append(expected_path)
             elif "memory" in ev_basename.lower():
-                # For memory images, we assume they are in /cases/images/
-                target_mounts.append(f"/cases/images/{ev_basename}")
+                # For memory images, we assume they are in /case/images/
+                target_mounts.append(f"/case/images/{ev_basename}")
             else:
                 logging.error(
                     f"[-] Evidence '{ev_basename}' not found mounted at {expected_path}"
