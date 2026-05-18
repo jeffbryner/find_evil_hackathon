@@ -66,6 +66,8 @@ uv run target-reg <forensic_disk_image_filename> -k "HKEY_LOCAL_MACHINE" -d 2 -q
 ...
 ```
 
+Key paths with slashes are escaped:
+
 ```shell
 uv run target-reg b<forensic_disk_image_filename> -k "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" -d 2 -q
 + 'Run' (2018-06-01 02:42:20.818747+00:00)

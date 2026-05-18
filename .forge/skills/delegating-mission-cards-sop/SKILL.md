@@ -29,23 +29,20 @@ The card **MUST** include the following information:
 - Mission: What is the agent being asked to do
 - Purpose: Why are the agent being asked to do it
 - Background: Current Case Context leading to this mission
-- Budget: A strict limit on the number of **tool calls** allotted for the task (Do not use time or abstract query limits). 
-  - Mission cards **MUST** define 3 budget pools:
+- Budget: A strict limit on the number of **tool calls** allotted for the task (Do not use time or abstract query limits).  Mission cards **MUST** define 3 budget pools:
     - `Orientation Budget` (e.g., 5 calls to find and verify the image)
     - `Execution Budget` (e.g., 20 calls to extract data). 
-    - `Reporting Budget` (e.g., 5 calls to update the mission card with results and findings)
-  - If orientation fails, the mission is aborted before execution begins.
-  - Allot budget in blocks of 5 calls, no less. This allows the agent to have enough calls to perform meaningful work while still enforcing discipline and focus.
+    - `Reporting Budget` (e.g., 5 calls to update the mission card with results)
+    - Allot budget in blocks of 5 calls, no less.
 - Fail-Fast Condition: Explicit instructions on when the agent should give up (e.g., "If your first 5 working searches yield no results, stop and report negative findings. Do not guess table names or follow fruitless paths.").
 - Task checklists: Format the mission cards with a literal markdown checklist that target agents must follow
 - NPS: Net Promoter Score to measure the agent's satisfaction with the task, the overall process and note any improvements needed.
 
 ### Delegation Conversation
 When tasking sub agents with a delegated task:
-1. Use Explicit I/O Instructions in the Task Prompt: Instead of just handing them a file path, put the exact output requirements directly into the tool invocation.
-  ⁎ Example: "Your mission is at /path/to/.../mission.md. You MUST use the patch tool to append your final report when you are done to conserve tokens. Do not just return it in the chat."
-2. Phase Separation (Micro-Missions): Do not combine heavy schema orientation with deep-dive data extraction. If orientation is needed, make it a separate prerequisite mission card.
-3. Strict Tool Call Budgets & Fail-Fast: To stop them from endlessly querying, enforce "Effort-Boxing" directly in the task description using tool call limits and explicit fail-fast conditions.
+1. Use Explicit I/O Instructions in the task Prompt: Instead of just handing them a file path, put the exact output requirements directly into the tool invocation.
+  **Example**: "Your mission is at /path/to/.../mission.md. You MUST use the patch tool to append your final report when you are done to conserve tokens. Do not just return it in the chat."
+2. Reinforce the strict Tool Call Budgets & Fail-Fast: To stop them from endlessly querying, enforce "Effort-Boxing" directly in the task description using tool call limits and explicit fail-fast conditions.
 
 ## Instructions for the Target Agent:
 ### Orientation
@@ -55,7 +52,7 @@ When tasking sub agents with a delegated task:
 - If you cannot achieve the goals within the budget, report back with a status update and records your attempts in the mission card. It is ok to not complete the entire mission, but you must report your progress, any issues encountered and a note about exhausting the budget.
 
 ### Completing the Mission
-**IMPORTANT:** When instructed to update a document, report, or mission card, you MUST use the `patch`or `write` tools to modify the file on the filesystem. Providing the updated text only in your conversational response does not fulfill the requirement and is considered a failure. Your mission is only complete when the mission card is updated and saved.
+**IMPORTANT:** When instructed to update a document, report, or mission card, you MUST use the `patch`or `write` tools to modify the file on the filesystem. Providing the updated text only in your conversational response does not fulfill the requirement and is considered a failure. **Your mission is only complete when the mission card is updated and saved.**
 
 Complete the mission according to the instructions in the card and add a results section detailing: 
 - Your approach
