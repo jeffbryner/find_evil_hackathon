@@ -21,6 +21,7 @@ tools:
   - todo_read
   - data-analyst
   - sniper-forensics
+  - mcp_filesystem*
 skills:
   - shared-facts-sop
   - delegating-mission-cards-sop
