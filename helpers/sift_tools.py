@@ -73,6 +73,8 @@ class SIFTOrchestrator:
                 auto_remove=True,  # Automatically remove container on stop
                 cpu_percent=90,  # Limit CPU usage to 90%
                 name=self.case_name if self.case_name else None,
+                hostname=self.case_name if self.case_name else None,
+                oom_kill_disable=True,  # Prevent OOM killer from killing the container
             )
             if self.container:
                 print(f"[+] Container {self.container.id[:12]} started.")
@@ -87,7 +89,8 @@ class SIFTOrchestrator:
             raise Exception("Container not started.")
 
         print(f"[*] Executing: {command}")
-        result = self.container.exec_run(command)
+        # Use bash shell to support pipes and other shell features
+        result = self.container.exec_run(["/bin/bash", "-c", command])
         print(f"[-] Exit code: {result.exit_code}")
         return result.output.decode("utf-8"), result.exit_code
 
@@ -200,8 +203,9 @@ class SIFTOrchestrator:
         # We'll use grep on the raw image to find the offset of 'NTFS'
         # Since we are in a container, we can use 'grep -a -b -o'
         # But grep offset is byte-level.
-        cmd = f"head -c 1G {raw_image} | grep -a -b -o 'NTFS    ' | head -n 5"
+        cmd = f"head --bytes=1G {raw_image} | grep -a -b -o 'NTFS    ' | head -n 5"
         output, _ = self.execute(cmd)
+        print(f"[*] Brute-force scan output:\n{output}")
         offsets = []
         for line in output.splitlines():
             # Format is offset:match
