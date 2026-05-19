@@ -25,8 +25,6 @@ def convert_plaso_to_parquet(plaso_path, parquet_path, batch_size=50000):
             ("message", pa.string()),
             ("file_name_lower", pa.string()),
             ("details", pa.string()),  # JSON string
-            ("filename_path", pa.string()),
-            ("imagename", pa.string()),
         ]
     )
 
