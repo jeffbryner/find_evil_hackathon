@@ -41,6 +41,4 @@ To track data volumes, browser history, and deleted files.
 - **Guide**: [System Usage](references/system-usage.md)
 
 ### 7. The Dissect/triage set of tools
-This section covers the use of Dissect and triage tools for analyzing Windows forensic data.
-- **Artifacts**: Retrieval of registry entries, event logs, and other system artifacts.
-- **Guide**: [Dissect and Triage](references/dissect-triage.md)
+For high-speed artifact extraction (Registry, Browser History, Event Logs) and Parquet conversion, use the `extract-triage-artifacts` skill.
