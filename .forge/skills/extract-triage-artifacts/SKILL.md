@@ -32,9 +32,15 @@ uv run target-reg <forensic_disk_image_filename> -k "HKEY_LOCAL_MACHINE\\Softwar
 - `-k`: Registry key name (escape backslashes).
 - `-d`: Depth level of traversal.
 
+## 4. Filtering and Formatting with rdump
+Use `rdump` to process, filter, and format results.
+- **Select fields**: `uv run target-query host.img -f users | uv run rdump -F name,home`
+- **JSONL output**: `uv run target-query host.img -f users | uv run rdump -J`
+- **Filter records**: `uv run target-query host.img -f users | uv run rdump -s "r.domain is not None"`
+
 ## Exporting to Parquet
 
-To enable high-speed SQL analysis via DuckDB, use the `rdump_to_parquet.py` helper.
+To save data for high-speed SQL analysis via DuckDB, use the `rdump_to_parquet.py` helper.
 
 ### Usage
 ```shell
@@ -43,11 +49,13 @@ uv run target-query <path/to/drive_image> -f <target.module> | uv run helpers/rd
 
 ### Example: Browser History
 ```shell
-uv run target-query cases/<CASEID>/images/<DRIVE_IMAGE> -f browser.history | uv run helpers/rdump_to_parquet.py cases/<CASEID>/scratch/DRIVE_IMAGE/parquet/browser_history.parquet
+uv run target-query cases/<CASEID>/images/<DRIVE_IMAGE_FILENAME> -f browser.history | uv run helpers/rdump_to_parquet.py cases/<CASEID>/scratch/<DRIVE_IMAGE_FILENAME>/parquet/browser_history.parquet
 ```
+Note that by convention we store Parquet files in a `parquet/` subdirectory under the image's scratch directory.
 
-## Filtering and Formatting with rdump
-Use `rdump` to process, filter, and format results.
-- **Select fields**: `uv run target-query host.img -f users | uv run rdump -F name,home`
-- **JSONL output**: `uv run target-query host.img -f users | uv run rdump -J`
-- **Filter records**: `uv run target-query host.img -f users | uv run rdump -s "r.domain is not None"`
+
+## Document new data
+If you create new parquet data files, be sure to update the shared facts case documentation data inventory with the new file paths and descriptions. This ensures that all team members have access to the latest extracted artifacts for analysis.
+
+
+
