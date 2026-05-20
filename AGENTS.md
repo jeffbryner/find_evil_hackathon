@@ -6,6 +6,15 @@ The goal is to conduct forensic analysis using AI as efficiently as possible to 
 
 **Approach**: We will be using a "Hybrid Funnel" approach: forensic tool use or heavy-lifting artifact extraction occurs in an emulated SIFT environment, while high-speed reasoning and timeline analysis occur locally using 'agent-friendly' analysis tools like DuckDB and Parquet.
 
+**Directory Layout standards**
+- `./cases`  - home for all forensic work
+- `./cases/<CASEID>` - case specific images, working docs, etc
+- `./cases/<CASEID>/images - read-only forensic images for the case (disk/memory/etc)
+- `./cases/<CASEID>/docs - all case docs (report, missions, shared facts)
+- `./cases/<CASEID>/scratch - working directory for forensic artifacts
+- `./cases/<CASEID>/scratch/<IMAGE>` - extracted artifacts from the image (i.e. if `images/some-c-drive.E01`, then `scratch/some-c-drive.E01/bodyfile.txt`, etc
+- `./cases/<CASEID>/scratch/<IMAGE>/parquet` - only for parquet extracts that will become queryable tables. i.e. `parquet/fs_timeline.parquet` is queryable as `select from fs_timeline`. The `IMAGE` portion of the directory is important to allow for cross image table joins as this is rendered as `imagename` in the schema.
+
 # Guidelines
 
 ## Core Technical Standards
