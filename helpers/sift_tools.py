@@ -36,7 +36,7 @@ def get_docker_socket():
 
 
 class SIFTOrchestrator:
-    def __init__(self, image_name="sift-volatility:pdb-cache", case_name=None):
+    def __init__(self, image_name="sift-ai:latest", case_name=None):
         # Use dynamic socket discovery
         self.client = docker.DockerClient(base_url=get_docker_socket())
         self.image_name = image_name
@@ -63,7 +63,6 @@ class SIFTOrchestrator:
                 self.image_name,
                 detach=True,
                 tty=True,
-                platform=platform,
                 volumes={
                     abs_case_root: {"bind": "/case", "mode": "ro"},
                     self.scratch_dir: {"bind": "/scratch", "mode": "rw"},
@@ -158,15 +157,26 @@ class SIFTOrchestrator:
                         )
                         self.execute(f"umount {mount_path}")
 
-        # Final fallback: direct mount
-        print("[*] All offset-based discovery failed. Trying direct mount...")
-        mount_cmd = f"mount -t ntfs -o ro,loop {raw_image} {mount_path}"
+        # fallback: imount
+        print("[*] All offset-based discovery failed. Trying imount...")
+        mount_cmd = f"imount --no-interaction -v -k --pretty --mountdir {mount_path} {raw_image}"
         output, code = self.execute(mount_cmd)
         if code == 0:
             if self._validate_mount(mount_path):
                 print(
                     f"[+] Successfully mounted NTFS partition directly at {mount_path}"
                 )
+                return mount_path
+            else:
+                self.execute(f"umount {mount_path}")
+
+        # fallback to dissect's target-mount
+        print("[*] All offset-based discovery failed. Trying target-mount...")
+        mount_cmd = f"target-mount {raw_image} {mount_path}"
+        output, code = self.execute(mount_cmd)
+        if code == 0:
+            if self._validate_mount(mount_path):
+                print(f"[+] Successfully mounted partition directly at {mount_path}")
                 return mount_path
             else:
                 self.execute(f"umount {mount_path}")
@@ -233,6 +243,8 @@ class SIFTOrchestrator:
             # Try to unmount everything first
             self.execute("umount -a -t ntfs")
             self.execute("umount -a -t fuse.ewf")
+            self.execute("umount -a -t fuse.xmount")
+            self.execute("umount -a -t fuse")
             self.container.stop()
             # self.container.remove()
             print("[+] Container removed.")
