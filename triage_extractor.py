@@ -45,7 +45,9 @@ class TriageExtractor:
             return "memory"
 
         # Check for Windows
-        output, _ = self.orchestrator.execute(f"ls {self.mount_path}")
+        output, _ = self.orchestrator.execute(
+            f"target-info -qJ /case/images/{self.evidence_name}"
+        )
         if "Windows" in output or "WINDOWS" in output:
             logging.info("[+] Detected OS: Windows")
             return "windows"
@@ -132,9 +134,10 @@ class TriageExtractor:
         )
         artifacts = (
             "WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache,"
-            "WindowsEventLogSecurity,WindowsEventLogSystem, WindowsXMLEventLogSecurity,WindowsXMLEventLogSystem,WindowsPrefetchFiles"
+            "WindowsEventLogSecurity,WindowsEventLogSystem, WindowsXMLEventLogSecurity,WindowsXMLEventLogSystem,WindowsPrefetchFiles,"
+            "WindowsUserJumpLists,WindowsOpenSaveMRU,WindowsOpenSavePidlMRU,WindowsSystemResourceUsageMonitorDatabaseFile"
         )
-        cmd = f"log2timeline.py --artifact_filters '{artifacts}' --storage_file {plaso_storage} {self.mount_path}"
+        cmd = f"log2timeline -q --artifact_filters '{artifacts}' --storage_file {plaso_storage} {self.mount_path}"
         self.orchestrator.execute(cmd)
 
         # MFT
