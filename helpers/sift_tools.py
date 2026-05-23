@@ -232,7 +232,14 @@ class SIFTOrchestrator:
         """Validate the mount by checking for common Windows directories."""
         output, _ = self.execute(f"ls {mount_path}")
         output_lower = output.lower()
-        common_dirs = ["windows", "users", "program files", "documents and settings"]
+        common_dirs = [
+            "windows",
+            "users",
+            "program files",
+            "documents and settings",
+            "filesystems",
+            "volumes",
+        ]
         found = [d for d in common_dirs if d in output_lower]
         return len(found) >= 2
 
