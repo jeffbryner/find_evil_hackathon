@@ -145,6 +145,14 @@ class SIFTOrchestrator:
                     f"mount -t ntfs -o ro,loop,offset={offset} {raw_image} {mount_path}"
                 )
                 output, code = self.execute(mount_cmd)
+                if code != 0:
+                    print(f"[*] Standard mount failed, trying ntfs-3g with force...")
+                    if offset == 0:
+                        mount_cmd = f"mount -t ntfs-3g -o ro,force {raw_image} {mount_path}"
+                    else:
+                        mount_cmd = f"mount -t ntfs-3g -o ro,loop,offset={offset},force {raw_image} {mount_path}"
+                    output, code = self.execute(mount_cmd)
+
                 if code == 0:
                     if self._validate_mount(mount_path):
                         print(
