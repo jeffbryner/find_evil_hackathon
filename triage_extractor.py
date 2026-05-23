@@ -125,19 +125,22 @@ class TriageExtractor:
         """Extract Windows-specific artifacts (Registry, EVTX, MFT) into a unified timeline."""
         logging.info("[*] Extracting Windows artifacts...")
 
-        # Paths for Plaso (inside container)
-        plaso_storage = f"/scratch/{self.evidence_name}/artifacts.plaso"
+        # Paths for Plaso parquet file (inside container)
+        plaso_storage = (
+            f"/scratch/{self.evidence_name}/parquet/artifacts_timeline.parquet"
+        )
 
         # 1. Targeted Registry and Event Log Artifacts
         logging.info(
-            "[*] Parsing targeted Registry and Event Log artifacts in a single pass..."
+            "[*] Parsing targeted Registry and Event Log artifacts from plaso to parquet"
         )
         artifacts = (
             "WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache,"
             "WindowsEventLogSecurity,WindowsEventLogSystem, WindowsXMLEventLogSecurity,WindowsXMLEventLogSystem,WindowsPrefetchFiles,"
-            "WindowsUserJumpLists,WindowsOpenSaveMRU,WindowsOpenSavePidlMRU,WindowsSystemResourceUsageMonitorDatabaseFile"
+            "WindowsUserJumpLists,WindowsOpenSaveMRU,WindowsOpenSavePidlMRU,WindowsSystemResourceUsageMonitorDatabaseFile,"
+            "CustomWindowsLNKFiles,WindowsPersistenceRegistryKeys"
         )
-        cmd = f"log2timeline -q --artifact_filters '{artifacts}' --storage_file {plaso_storage} {self.mount_path}"
+        cmd = f"psteal_parquet.py -q --artifact_filters '{artifacts}' -w {plaso_storage} --source {self.mount_path}"
         self.orchestrator.execute(cmd)
 
         # MFT
