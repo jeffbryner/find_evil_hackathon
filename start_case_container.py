@@ -6,7 +6,7 @@ import sys
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Initialize the environment by starting the SIFT container."
+        description="Starting a SIFT container for a specific forensic case."
     )
     parser.add_argument(
         "--case",

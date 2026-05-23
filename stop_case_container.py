@@ -7,7 +7,7 @@ from helpers.sift_tools import SIFTOrchestrator
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Clean up the forensic environment by stopping the SIFT container."
+        description="Clean up the forensic environment by stopping the SIFT container associated with a specific case."
     )
     parser.add_argument("--case", required=True, help="Name of the forensic case")
     args = parser.parse_args()
