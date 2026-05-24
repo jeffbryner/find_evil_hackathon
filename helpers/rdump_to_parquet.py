@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import pyarrow as pa
 import pyarrow.parquet as pq
