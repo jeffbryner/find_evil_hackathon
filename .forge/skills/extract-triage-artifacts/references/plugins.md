@@ -7,6 +7,7 @@ A full list of available plugin modules for `target-query`. You can also list th
 - `browser.cookies`: Cookies for chromium, edge, firefox, brave, chrome.
 - `browser.downloads`: Downloads for chromium, edge, iexplore, firefox, brave, chrome.
 - `browser.extensions`: Extensions for chromium, edge, firefox, brave, chrome.
+- `browser.passwords`: Passwords recovered from browser storage.
 
 ## Windows Specific
 - `amcache.applications`: InventoryApplication records from Amcache hive.
@@ -20,6 +21,14 @@ A full list of available plugin modules for `target-query`. You can also list th
 - `usb`: Information about historically attached USB storage devices.
 - `services`: Information about all installed Windows services.
 - `tasks`: All scheduled tasks on a Windows system.
+- `lsa.secrets`: Yield decrypted LSA secrets from a Windows target. (output: records)
+- `sam`: Dump SAM entries (output: records)
+- `dpapi.keyprovider.credhist.keys`: Yield Windows CREDHIST SHA1 hashes. (output: lines)
+- `dpapi.keyprovider.defaultpassword.lsa.keys`: Yield Windows LSA DefaultPassword strings. (output: lines)
+- `dpapi.keyprovider.defaultpassword.winlogon.keys`: Yield Windows Winlogon DefaultPassword strings. (output: lines)
+- `dpapi.keyprovider.keychain.keys`: Yield keychain passphrases. (output: lines)
+- `dpapi.keyprovider.keys`: Return keys for: dpapi.keyprovider.empty, dpapi.keyprovider.keychain, dpapi.keyprovider.credhist, dpapi.keyprovider.defaultpassword.lsa, dpapi.keyprovider.defaultpassword.winlogon (output: lines)
+
 
 ## Linux/Unix Specific
 - `bashhistory`: Return shell history for all UNIX users.
