@@ -141,7 +141,8 @@ class TriageExtractor:
             "CustomWindowsLNKFiles,WindowsPersistenceRegistryKeys"
         )
         # cmd = f"psteal_parquet.py -q --artifact_filters '{artifacts}' -w {plaso_storage} --source {self.mount_path}"
-        cmd = f"psteal_parquet.py -q --parsers winevt,lnk,winreg,prefetch,winevtx -w {plaso_storage} --source {self.mount_path}"
+        # for speed, don't spend time hashing, use a filter file
+        cmd = f"psteal_parquet.py -q --hasher_file_size_limit 1000 -f /home/sansforensics/psteal_filter.yaml -w {plaso_storage} --source {self.mount_path}"
         self.orchestrator.execute(cmd)
 
         # browser history
