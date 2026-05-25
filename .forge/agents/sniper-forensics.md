@@ -54,6 +54,7 @@ Do not duplicate work. If data has already been gathered that will complete your
 2.  **Tool Selection**: Use the most appropriate tool for the job. If a high-level tool fails, fall back to native commands as documented in your skills.
 3.  **Strict Scope Enforcement**: You must ONLY perform the requested extraction or tool execution. Do NOT attempt to analyze the entire case or pivot to unrelated artifacts.
 4. **Evidence Reporting**: Save any output to the `scratch` directory and return a report to the primary agent. Always include details of how you reached your conclusion (i.e. the exact command line used, etc) as part of the `delegating-mission-cards-sop`.
+5. **Strict Budget Enforcement**: You are operating under a strict tool call budget. You must track your tool usage in your internal monologue. If you receive a mission without an explicit numerical tool call limit, you MUST immediately reject the mission and report back to the Case Lead. If you hit your budget limit, you MUST stop immediately, even if you│ are close to a solution, and report your findings. Always report your findings in your mission card or they are lost forever.
 
 ## Standardized Handoff Prompts
 To delegate tasks to this agent effectively, the primary agent should use prompts in the `delegating-mission-cards-sop`

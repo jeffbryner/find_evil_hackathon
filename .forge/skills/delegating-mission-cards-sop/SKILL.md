@@ -17,6 +17,9 @@ All agents **MUST** use this skill to properly delegate and execute tasks while 
   - Never remove mission cards, they are a record of all delegated tasks.
   - Never remove sections, append new content instead.
   - Keep entries concise and agent/parsing friendly (markdown todo lists for example)
+  - Budget in increments of 5 tool calls to stay parsable and easy to understand at a glance. 
+  - Execution budgets should be between 10-50 tool calls depending on the complexity of the task. 
+  - Orientation and reporting budgets should be between 5-15 tool calls.
 
 ## Instructions for the Delegating Agent:
 ### Mission Cards
@@ -24,19 +27,37 @@ Create a new markdown file for each mission in `cases/{case_name}/docs/missions/
 Name the file: `{001..999}-mission-{target_agent}-{short-task-description}.md`
 (Example: `001-mission-data-analyst-deletion-timeline.md`, `002-mission-sniper-forensics-carve-zip.md`)
 
-The card **MUST** include the following information:
-- The Target Agent
-- Mission: What is the agent being asked to do
-- Purpose: Why are the agent being asked to do it
-- Background: Current Case Context leading to this mission
-- Budget: A strict limit on the number of **tool calls** allotted for the task (Do not use time or abstract query limits).  Mission cards **MUST** define 3 budget pools:
-    - `Orientation Budget` (e.g., 5 calls to find and verify the image)
-    - `Execution Budget` (e.g., 20 calls to extract data). 
-    - `Reporting Budget` (e.g., 5 calls to update the mission card with results)
-    - Allot budget in blocks of 5 calls, no less.
-- Fail-Fast Condition: Explicit instructions on when the agent should give up (e.g., "If your first 5 working searches yield no results, stop and report negative findings. Do not guess table names or follow fruitless paths.").
-- Task checklists: Format the mission cards with a literal markdown checklist that target agents must follow
-- NPS: Net Promoter Score to measure the agent's satisfaction with the task, the overall process and note any improvements needed.
+You **MUST** use the following exact Markdown template when creating the file:
+
+```markdown
+# Mission: [Short Title]
+**Target Agent:** [Agent Name]
+
+## Purpose
+[Why are we doing this?]
+
+## Background
+[Current Case Context leading to this mission]
+
+## Budget & Rules of Engagement
+- **Orientation Budget:** [X] tool calls
+- **Execution Budget:** [Y] tool calls
+- **Reporting Budget:** [Z] tool calls
+- **Fail-Fast Condition:** [Explicit instructions on when the agent should give up, e.g., "If the file is not found in 5 searches, stop and report."]
+
+## Task Checklist
+- [ ] Task 1
+- [ ] Task 2
+- [ ] Update this mission card with results
+
+## Results & Post-Mortem
+*(To be filled out by the Target Agent)*
+- **Approach:**
+- **Findings:**
+- **Confidence Rating:**
+- **Budget Tally:**
+- **NPS / Feedback:**
+```
 
 ### Delegation Conversation
 When tasking sub agents with a delegated task:
@@ -47,6 +68,7 @@ When tasking sub agents with a delegated task:
 ## Instructions for the Target Agent:
 ### Orientation
 - Retrieve and read the mission card.
+- **CRITICAL BUDGET CHECK:** If the mission card does NOT contain explicit numerical budgets for Orientation, Execution, and Reporting, you **MUST IMMEDIATELY REJECT THE MISSION**. Do not attempt to guess a budget. Update the mission card with "Mission Rejected: Missing explicit tool budgets" and return control to the Lead Agent.
 - Pay special attention to the goals and the budget given to you to stay within the specified limits.
 - Before executing any forensic tools, you **MUST** explicitly state the budget and fail-fast conditions you are operating under in your first response. 
 - If you cannot achieve the goals within the budget, report back with a status update and records your attempts in the mission card. It is ok to not complete the entire mission, but you must report your progress, any issues encountered and a note about exhausting the budget.
