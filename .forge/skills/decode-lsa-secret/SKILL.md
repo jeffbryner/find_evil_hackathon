@@ -31,7 +31,7 @@ Decoded Parts:
 [1] 548923671
 [2] 1608
 [3] 3
-[4] SHIELDBASE\frocba
-[5] Big-Purple-Truck
+[4] <domain/user>
+[5] <credential in plaintext>
 [6] 0
 ```

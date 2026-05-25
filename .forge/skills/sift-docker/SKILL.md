@@ -1,6 +1,6 @@
 ---
 name: sift-docker
-description: Orchestrate forensic analysis using a SIFT workstation Docker container. Use this skill when you need to execute forensic tools (like fls, regfexport, md5sum) against mounted evidence, manage the container lifecycle, or map paths between the local host and the container environment.
+description: Orchestrate forensic analysis using a SIFT workstation Docker container. Use this skill when you need to execute forensic tools (like fls, icat, psteal_to_parquet.py) against mounted evidence, manage the container lifecycle, or map paths between the local host and the container environment.
 ---
 
 # SIFT Docker Forensic Orchestration
