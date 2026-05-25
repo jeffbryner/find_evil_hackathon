@@ -1,0 +1,7 @@
+{"type": "ip", "value": "213.202.233.104", "source": "memory_netscan (RDP established)", "timestamp": "2026-05-25T04:05:44.732891Z"}
+{"type": "ip", "value": "81.30.144.115", "source": "memory_netscan (RDP established)", "timestamp": "2026-05-25T04:05:44.777314Z"}
+{"type": "ip", "value": "81.19.209.101", "source": "memory_netscan (RDP SYN_RCVD)", "timestamp": "2026-05-25T04:05:44.823115Z"}
+{"type": "ip", "value": "201.193.188.114", "source": "memory_netscan (RDP closed)", "timestamp": "2026-05-25T04:05:44.869173Z"}
+{"type": "ip", "value": "174.196.200.9", "source": "artifacts_timeline (Successful RDP logon as srl-helpdesk@outlook.com)", "timestamp": "2026-05-25T04:14:06.200578Z"}
+{"type": "ip", "value": "52.249.198.56", "source": "artifacts_timeline (Successful RDP logon as fred.rocba@outlook.com)", "timestamp": "2026-05-25T04:14:06.243477Z"}
+{"type": "email", "value": "crimsonguard@cobracommandcenter.com", "source": "Google DriveFS metadata_sqlite_db associated account", "timestamp": "2026-05-25T16:31:57.094640Z"}
