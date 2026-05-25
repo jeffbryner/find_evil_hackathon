@@ -90,7 +90,7 @@ class SIFTOrchestrator:
         print(f"[*] Executing: {command}")
         # Use bash shell to support pipes and other shell features
         result = self.container.exec_run(["/bin/bash", "-c", command])
-        print(f"[-] Exit code: {result.exit_code}")
+        print(f"[-] Exit code: {result.exit_code} cmd: {command}")
         return result.output.decode("utf-8"), result.exit_code
 
     def mount_evidence(self, evidence_file, case_name):

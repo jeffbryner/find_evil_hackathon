@@ -125,10 +125,11 @@ class TriageExtractor:
         """Extract Windows-specific artifacts (Registry, EVTX, MFT) into a unified timeline."""
         logging.info("[*] Extracting Windows artifacts...")
 
-        # Paths for Plaso parquet file (inside container)
-        plaso_storage = (
+        # Paths for Plaso /  parquet files (view point inside container)
+        parquet_storage = (
             f"/scratch/{self.evidence_name}/parquet/artifacts_timeline.parquet"
         )
+        plaso_storage = f"/scratch/{self.evidence_name}/plaso.artifacts.tmp"
 
         # 1. Targeted Registry and Event Log Artifacts
         logging.info(
@@ -141,9 +142,17 @@ class TriageExtractor:
             "CustomWindowsLNKFiles,WindowsPersistenceRegistryKeys"
         )
         # cmd = f"psteal_parquet.py -q --artifact_filters '{artifacts}' -w {plaso_storage} --source {self.mount_path}"
-        # for speed, don't spend time hashing, use a filter file
-        cmd = f"psteal_parquet.py -q --hasher_file_size_limit 1000 -f /home/sansforensics/psteal_filter.yaml -w {plaso_storage} --source {self.mount_path}"
+        # for speed, don't spend time hashing, use a filter file, no status view
+        cmd = f"psteal_parquet.py --hasher_file_size_limit 1000 --status-view none --single_process -f /home/sansforensics/psteal_filter.yaml -w {parquet_storage} --source {self.mount_path} --storage-file {plaso_storage}"
         self.orchestrator.execute(cmd)
+        # run with tty
+        # print(f"[*] PSTEAL Executing: {cmd}")
+        # # Use bash shell to support pipes and other shell features
+        # result = self.orchestrator.container.exec_run(
+        #     ["/bin/bash", "-c", cmd], stdout=True, stderr=True, tty=True
+        # )
+        # print(f"[-] PSTEAL Exit code: {result.exit_code}")
+        # return result.output.decode("utf-8"), result.exit_code
 
         # browser history
         logging.info("[*] Extracting browser history...")
@@ -199,7 +208,7 @@ class TriageExtractor:
         plugins = [
             ("windows.netscan.NetScan", "netscan.jsonl"),
             ("windows.pslist.PsList", "pslist.jsonl"),
-            ("timeliner.Timeliner", "timeliner.jsonl"),
+            # ("timeliner.Timeliner", "timeliner.jsonl"),
         ]
 
         for plugin, output_file in plugins:
