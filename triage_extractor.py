@@ -140,7 +140,13 @@ class TriageExtractor:
             "WindowsUserJumpLists,WindowsOpenSaveMRU,WindowsOpenSavePidlMRU,WindowsSystemResourceUsageMonitorDatabaseFile,"
             "CustomWindowsLNKFiles,WindowsPersistenceRegistryKeys"
         )
-        cmd = f"psteal_parquet.py -q --artifact_filters '{artifacts}' -w {plaso_storage} --source {self.mount_path}"
+        # cmd = f"psteal_parquet.py -q --artifact_filters '{artifacts}' -w {plaso_storage} --source {self.mount_path}"
+        cmd = f"psteal_parquet.py -q --parsers winevt,lnk,winreg,prefetch,winevtx -w {plaso_storage} --source {self.mount_path}"
+        self.orchestrator.execute(cmd)
+
+        # browser history
+        logging.info("[*] Extracting browser history...")
+        cmd = f"target-query {self.mount_path} -f browser.history | rdump_to_parquet.py /scratch/{self.evidence_name}/parquet/browser_history.parquet"
         self.orchestrator.execute(cmd)
 
         # MFT
