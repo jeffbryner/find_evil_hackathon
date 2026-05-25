@@ -40,8 +40,15 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-exfiltra
     ORDER BY CAST(details->>'bytes_sent' AS BIGINT) DESC;
     ```
 
-4.  **Analyze Findings:**
+4.  **Analyze Findings & Log IOCs:**
     Correlate the timestamps of archive creation with large outbound network connections or the execution of tunneling tools (e.g., PowerShell reverse port-forwards).
+    
+    **CRITICAL:** For any identified suspicious IP, domain, file path, registry key, or hash, you **MUST** immediately register it as an Indicator of Compromise (IOC) using `ioc_tracker.py` before completing your turn. This ensures parallel sub-agents can automatically correlate and join your findings.
+    
+    *Example:*
+    ```bash
+    uv run helpers/ioc_tracker.py --case <case_name> --add ip --value "52.249.198.56" --source hunt-exfiltration-sop
+    ```
 
 5.  **Report:**
-    Return a structured summary of potential staging directories, created archives (including size and path), and any correlated network exfiltration events.
+    Return a structured summary of potential staging directories, created archives (including size and path), any correlated network exfiltration events, and a list of logged IOCs.

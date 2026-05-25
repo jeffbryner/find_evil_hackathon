@@ -24,6 +24,8 @@ uv run target-query <forensic_disk_image_filename> -f <plugin> -qs
 - `-s`: Force string/ascii only output.
 - For a full list of available plugins, see [plugins.md](references/plugins.md).
 
+**Agent Best Practice:** Always pipe `target-query` outputs to `rdump -J` (for JSONL) or use the `-s` (string-only) flag. Dumping raw record streams directly to the terminal outputs binary control characters, which can pollute your context window and degrade reasoning performance.
+
 ### 3. target-reg
 Query registry hives or keys directly.
 ```shell
@@ -52,6 +54,18 @@ uv run target-query <path/to/drive_image> -f <target.module> | uv run helpers/rd
 uv run target-query cases/<CASEID>/images/<DRIVE_IMAGE_FILENAME> -f browser.history | uv run helpers/rdump_to_parquet.py cases/<CASEID>/scratch/<DRIVE_IMAGE_FILENAME>/parquet/browser_history.parquet
 ```
 Note that by convention we store Parquet files in a `parquet/` subdirectory under the image's scratch directory.
+
+### End-to-End Pipeline Quick-Reference
+Use this table to map common forensic objectives to Dissect target-query modules, their corresponding Parquet outputs, and the standard SQL queries to analyze them:
+
+| Forensic Objective | Dissect Plugin | Target Parquet File | Recommended Query |
+| --- | --- | --- | --- |
+| **Browser History** | `browser.history` | `browser_history.parquet` | `SELECT url, title, visit_count FROM browser_history ORDER BY visit_count DESC;` |
+| **User Accounts** | `users` | `users.parquet` | `SELECT name, sid, home, shell FROM users;` |
+| **Installed Apps** | `apps` | `installed_apps.parquet` | `SELECT name, version, install_date FROM installed_apps;` |
+| **LSA Secrets** | `lsa.secrets` | `lsa_secrets.parquet` | `SELECT name, secret_type, value FROM lsa_secrets;` |
+| **Browser Logins** | `browser.passwords` | `browser_passwords.parquet` | `SELECT url, username, password FROM browser_passwords;` |
+| **Run Keys** | `registry.run` | `run_keys.parquet` | `SELECT key_path, name, value FROM run_keys;` |
 
 
 ## Document new data

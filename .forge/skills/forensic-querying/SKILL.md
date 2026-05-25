@@ -84,6 +84,31 @@ FROM fs_timeline f
 JOIN iocs i ON f.message LIKE '%' || i.value || '%';
 ```
 
+## Custom Event Schema Contract
+
+When sub-agents parse custom databases or non-standard logs (such as a recovered Outlook PST email archive), they should format their extracted events to match the standardized timeline schema so they can be merged or queried alongside `fs_timeline` and `artifacts_timeline`.
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `timestamp` | TIMESTAMP | UTC event time (primary key for sorting/timeline reconstruction). |
+| `source` | VARCHAR | Name of the custom parser or source (e.g., `pst_email_archive`). |
+| `message` | VARCHAR | Primary human-readable summary (e.g., `Email from Maria Hill regarding Project ADAMANTIUM`). |
+| `details` | JSON | JSON blob containing all other raw metadata (e.g., sender, recipient, attachments). |
+
+By conforming to this schema and outputting to a Parquet file, you can easily perform `UNION ALL` or `JOIN` operations against other system timelines.
+
+## End-to-End Pipeline Quick-Reference
+Use this table to map common forensic objectives to Dissect target-query modules, their corresponding Parquet outputs, and the standard SQL queries to analyze them:
+
+| Forensic Objective | Dissect Plugin | Target Parquet File | Recommended Query |
+| --- | --- | --- | --- |
+| **Browser History** | `browser.history` | `browser_history.parquet` | `SELECT url, title, visit_count FROM browser_history ORDER BY visit_count DESC;` |
+| **User Accounts** | `users` | `users.parquet` | `SELECT name, sid, home, shell FROM users;` |
+| **Installed Apps** | `apps` | `installed_apps.parquet` | `SELECT name, version, install_date FROM installed_apps;` |
+| **LSA Secrets** | `lsa.secrets` | `lsa_secrets.parquet` | `SELECT name, secret_type, value FROM lsa_secrets;` |
+| **Browser Logins** | `browser.passwords` | `browser_passwords.parquet` | `SELECT url, username, password FROM browser_passwords;` |
+| **Run Keys** | `registry.run` | `run_keys.parquet` | `SELECT key_path, name, value FROM run_keys;` |
+
 ## Investigative Recipes
 
 Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippets for:

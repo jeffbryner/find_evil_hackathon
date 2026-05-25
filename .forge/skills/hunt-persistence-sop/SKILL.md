@@ -38,8 +38,15 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-persiste
     ORDER BY timestamp DESC;
     ```
 
-4.  **Analyze Findings:**
+4.  **Analyze Findings & Log IOCs:**
     Review the output for suspicious binaries (e.g., executing out of `C:\Windows\Temp`, `C:\Users\Public`, or randomly named executables).
+    
+    **CRITICAL:** For any identified suspicious IP, domain, file path, registry key, or hash, you **MUST** immediately register it as an Indicator of Compromise (IOC) using `ioc_tracker.py` before completing your turn. This ensures parallel sub-agents can automatically correlate and join your findings.
+    
+    *Example:*
+    ```bash
+    uv run helpers/ioc_tracker.py --case <case_name> --add registry_key --value "HKCU\Software\Microsoft\Windows\CurrentVersion\Run\msedge_service" --source hunt-persistence-sop
+    ```
 
 5.  **Report to Case Lead:**
-    Return a structured JSON or Markdown summary of the suspicious persistence mechanisms found, including timestamps, hostnames (`imagename`), and the exact payloads.
+    Return a structured JSON or Markdown summary of the suspicious persistence mechanisms found, including timestamps, hostnames (`imagename`), the exact payloads, and a list of logged IOCs.

@@ -41,8 +41,15 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-executio
     ORDER BY timestamp DESC;
     ```
 
-4.  **Analyze Findings:**
+4.  **Analyze Findings & Log IOCs:**
     Determine the first and last time the target binary was executed. Identify the path it was executed from and any command-line arguments used.
+    
+    **CRITICAL:** For any identified suspicious IP, domain, file path, registry key, or hash, you **MUST** immediately register it as an Indicator of Compromise (IOC) using `ioc_tracker.py` before completing your turn. This ensures parallel sub-agents can automatically correlate and join your findings.
+    
+    *Example:*
+    ```bash
+    uv run helpers/ioc_tracker.py --case <case_name> --add file --value "C:\Windows\Temp\malicious.exe" --source hunt-execution-sop
+    ```
 
 5.  **Report:**
-    Return a structured timeline of the binary's execution, including the source artifact (Prefetch, AppCompatCache, EVTX) and the execution context.
+    Return a structured timeline of the binary's execution, including the source artifact (Prefetch, AppCompatCache, EVTX), the execution context, and a list of logged IOCs.

@@ -7,7 +7,7 @@ reasoning:
   effort: medium
   exclude: false  
 provider: vertex_ai
-model: gemini-3-flash-preview
+model: gemini-3.5-flash
 max_turns: 50 
 max_requests_per_turn: 50
 tool_supported: true
