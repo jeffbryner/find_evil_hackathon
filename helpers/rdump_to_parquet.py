@@ -31,7 +31,7 @@ def get_pyarrow_type(field_type):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: uv run python helpers/rdump_to_parquet.py <output.parquet>")
+        print("Usage: target-query... | rdump_to_parquet.py <output.parquet>")
         sys.exit(1)
 
     output_path = sys.argv[1]
