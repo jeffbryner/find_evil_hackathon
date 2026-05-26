@@ -131,28 +131,11 @@ class TriageExtractor:
         )
         plaso_storage = f"/scratch/{self.evidence_name}/plaso.artifacts.tmp"
 
-        # 1. Targeted Registry and Event Log Artifacts
-        logging.info(
-            "[*] Parsing targeted Registry and Event Log artifacts from plaso to parquet"
-        )
-        artifacts = (
-            "WindowsRunKeys,WindowsServices,WindowsUserAssist,WindowsAppCompatCache,"
-            "WindowsEventLogSecurity,WindowsEventLogSystem, WindowsXMLEventLogSecurity,WindowsXMLEventLogSystem,WindowsPrefetchFiles,"
-            "WindowsUserJumpLists,WindowsOpenSaveMRU,WindowsOpenSavePidlMRU,WindowsSystemResourceUsageMonitorDatabaseFile,"
-            "CustomWindowsLNKFiles,WindowsPersistenceRegistryKeys"
-        )
-        # cmd = f"psteal_parquet.py -q --artifact_filters '{artifacts}' -w {plaso_storage} --source {self.mount_path}"
+        # 1. Targeted plaso Artifacts
+        logging.info("[*] Parsing targeted artifacts from plaso to parquet")
         # for speed, don't spend time hashing, use a filter file, no status view
-        cmd = f"psteal_parquet.py --hasher_file_size_limit 1000 --status-view none --single_process -f /home/sansforensics/psteal_filter.yaml -w {parquet_storage} --source {self.mount_path} --storage-file {plaso_storage}"
+        cmd = f"psteal_parquet.py --hasher_file_size_limit 10 --status-view none --single_process -f /home/sansforensics/psteal_filter.yaml -w {parquet_storage} --source {self.mount_path} --storage-file {plaso_storage}"
         self.orchestrator.execute(cmd)
-        # run with tty
-        # print(f"[*] PSTEAL Executing: {cmd}")
-        # # Use bash shell to support pipes and other shell features
-        # result = self.orchestrator.container.exec_run(
-        #     ["/bin/bash", "-c", cmd], stdout=True, stderr=True, tty=True
-        # )
-        # print(f"[-] PSTEAL Exit code: {result.exit_code}")
-        # return result.output.decode("utf-8"), result.exit_code
 
         # browser history
         logging.info("[*] Extracting browser history...")
@@ -160,24 +143,24 @@ class TriageExtractor:
         self.orchestrator.execute(cmd)
 
         # MFT
-        logging.info("[*] Extracting MFT...")
-        raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
-        output, _ = self.orchestrator.execute("mount")
-        offset = 0
-        for line in output.splitlines():
-            if self.mount_path in line and "offset=" in line:
-                match = re.search(r"offset=(\d+)", line)
-                if match:
-                    offset = int(match.group(1)) // 512
+        # logging.info("[*] Extracting MFT...")
+        # raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
+        # output, _ = self.orchestrator.execute("mount")
+        # offset = 0
+        # for line in output.splitlines():
+        #     if self.mount_path in line and "offset=" in line:
+        #         match = re.search(r"offset=(\d+)", line)
+        #         if match:
+        #             offset = int(match.group(1)) // 512
 
-        if offset > 0:
-            self.orchestrator.execute(
-                f"bash -c 'icat -o {offset} {raw_image} 0 > /scratch/{self.evidence_name}/MFT'"
-            )
-        else:
-            self.orchestrator.execute(
-                f"bash -c 'icat {raw_image} 0 > /scratch/{self.evidence_name}/MFT'"
-            )
+        # if offset > 0:
+        #     self.orchestrator.execute(
+        #         f"bash -c 'icat -o {offset} {raw_image} 0 > /scratch/{self.evidence_name}/MFT'"
+        #     )
+        # else:
+        #     self.orchestrator.execute(
+        #         f"bash -c 'icat {raw_image} 0 > /scratch/{self.evidence_name}/MFT'"
+        #     )
 
     def _extract_linux_artifacts(self):
         """Extract Linux-specific artifacts."""
@@ -206,9 +189,12 @@ class TriageExtractor:
         )
 
         plugins = [
-            ("windows.netscan.NetScan", "netscan.jsonl"),
+            # ("windows.netscan.NetScan", "netscan.jsonl"),
             ("windows.pslist.PsList", "pslist.jsonl"),
-            # ("timeliner.Timeliner", "timeliner.jsonl"),
+            (
+                "timeliner.Timeliner",
+                "timeliner.jsonl",
+            ),
         ]
 
         for plugin, output_file in plugins:
@@ -225,6 +211,18 @@ class TriageExtractor:
                 "-r",
                 "jsonl",
                 plugin,
+                "--plugin-filter",
+                "PsScan",  # Filter to speed up timeliner by only scanning for processes
+                "Threads",
+                "DllList",
+                "Amcache",
+                "ShimcacheMem",
+                "ScheduledTasks",
+                "NetScan",
+                "SymlinkScan",
+                "PsList",
+                "Sessions",
+                "UserAssist",
             ]
             try:
                 with open(output_path, "w") as f:
