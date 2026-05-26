@@ -7,7 +7,7 @@ from sift_tools import SIFTOrchestrator, get_docker_socket
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Execute a command inside the SIFT container."
+        description="Easy helper for mere humans to execute a command inside the SIFT container."
     )
     parser.add_argument("--case", required=True, help="Name of the forensic case")
     parser.add_argument("cmd", nargs="+", help="Command to execute")
@@ -21,7 +21,7 @@ def main():
 
     if not os.path.exists(container_id_file):
         print(
-            f"[-] Error: Container not started for case {case_name}. Run 'init_case' first."
+            f"[-] Error: Container not started for case {case_name}. Run 'uv run start_case_container.py' first."
         )
         sys.exit(1)
 

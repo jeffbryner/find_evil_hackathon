@@ -4,6 +4,14 @@ import subprocess
 import time
 import sys
 import re
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
 
 
 def get_docker_socket():
@@ -58,7 +66,9 @@ class SIFTOrchestrator:
         platform = "linux/amd64"
 
         try:
-            print(f"[*] Starting container {self.image_name} (platform: {platform})...")
+            logging.info(
+                f"[*] Starting container {self.image_name} (platform: {platform})..."
+            )
             self.container = self.client.containers.run(
                 self.image_name,
                 detach=True,
@@ -87,10 +97,10 @@ class SIFTOrchestrator:
         if not self.container:
             raise Exception("Container not started.")
 
-        print(f"[*] Executing: {command}")
+        logging.info(f"[*] Executing: {command}")
         # Use bash shell to support pipes and other shell features
         result = self.container.exec_run(["/bin/bash", "-c", command])
-        print(f"[-] Exit code: {result.exit_code} cmd: {command}")
+        logging.info(f"[-] Exit code: {result.exit_code} cmd: {command}")
         return result.output.decode("utf-8"), result.exit_code
 
     def mount_evidence(self, evidence_file, case_name):
@@ -99,13 +109,15 @@ class SIFTOrchestrator:
 
         # Safeguard: Do not attempt to mount memory images as disk images
         if "memory" in evidence_basename.lower():
-            print(
+            logging.info(
                 f"[*] Registering memory image: {evidence_basename} (will be analyzed with Volatility)"
             )
             # Memory images are not mounted, so we return the path within the container
             return f"/case/{evidence_file}"
 
-        print(f"[*] Mounting evidence file: {evidence_file} for case: {case_name}")
+        logging.info(
+            f"[*] Mounting evidence file: {evidence_file} for case: {case_name}"
+        )
 
         # Create unique mount points
         ewf_mount_dir = f"/mnt/ewf/{case_name}/{evidence_basename}"
@@ -119,7 +131,7 @@ class SIFTOrchestrator:
         ewf_cmd = f"ewfmount /case/{evidence_file} {ewf_mount_dir}"
         output, code = self.execute(ewf_cmd)
         if code != 0:
-            print(f"[-] ewfmount failed: {output}")
+            logging.error(f"[-] ewfmount failed: {output}")
             return False
 
         # Brief delay for mount propagation
@@ -135,16 +147,18 @@ class SIFTOrchestrator:
         ]
 
         for method_name, discovery_func in discovery_methods:
-            print(f"[*] Attempting discovery via {method_name}...")
+            logging.info(f"[*] Attempting discovery via {method_name}...")
             offsets = discovery_func(raw_image)
             for offset in offsets:
-                print(
+                logging.info(
                     f"[*] Attempting mount at offset {offset} (Method: {method_name})"
                 )
                 mount_cmd = f"mount -t ntfs -o ro,loop,show_sys_files,streams_interface=windows,offset={offset} {raw_image} {mount_path}"
                 output, code = self.execute(mount_cmd)
                 if code != 0:
-                    print(f"[*] Standard mount failed, trying ntfs-3g with force...")
+                    logging.info(
+                        f"[*] Standard mount failed, trying ntfs-3g with force..."
+                    )
                     if offset == 0:
                         mount_cmd = f"mount -t ntfs-3g -o ro,show_sys_files,streams_interface=windows,force {raw_image} {mount_path}"
                     else:
@@ -153,23 +167,23 @@ class SIFTOrchestrator:
 
                 if code == 0:
                     if self._validate_mount(mount_path):
-                        print(
+                        logging.info(
                             f"[+] Successfully mounted NTFS partition at {mount_path} using {method_name} (offset: {offset})"
                         )
                         return mount_path
                     else:
-                        print(
+                        logging.info(
                             f"[*] Mount succeeded but validation failed at {mount_path}. Unmounting..."
                         )
                         self.execute(f"umount {mount_path}")
 
         # fallback: imount
-        print("[*] All offset-based discovery failed. Trying imount...")
+        logging.info("[*] All offset-based discovery failed. Trying imount...")
         mount_cmd = f"imount --no-interaction -v -k --pretty --mountdir {mount_path} {raw_image}"
         output, code = self.execute(mount_cmd)
         if code == 0:
             if self._validate_mount(mount_path):
-                print(
+                logging.info(
                     f"[+] Successfully mounted NTFS partition directly at {mount_path}"
                 )
                 return mount_path
@@ -177,12 +191,14 @@ class SIFTOrchestrator:
                 self.execute(f"umount {mount_path}")
 
         # fallback to dissect's target-mount
-        print("[*] All offset-based discovery failed. Trying target-mount...")
+        logging.info("[*] All offset-based discovery failed. Trying target-mount...")
         mount_cmd = f"target-mount {raw_image} {mount_path}"
         output, code = self.execute(mount_cmd)
         if code == 0:
             if self._validate_mount(mount_path):
-                print(f"[+] Successfully mounted partition directly at {mount_path}")
+                logging.info(
+                    f"[+] Successfully mounted partition directly at {mount_path}"
+                )
                 return mount_path
             else:
                 self.execute(f"umount {mount_path}")
@@ -221,7 +237,7 @@ class SIFTOrchestrator:
         # But grep offset is byte-level.
         cmd = f"head --bytes=1G {raw_image} | grep -a -b -o 'NTFS    ' | head -n 5"
         output, _ = self.execute(cmd)
-        print(f"[*] Brute-force scan output:\n{output}")
+        logging.info(f"[*] Brute-force scan output:\n{output}")
         offsets = []
         for line in output.splitlines():
             # Format is offset:match
