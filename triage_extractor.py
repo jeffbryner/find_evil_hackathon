@@ -189,7 +189,7 @@ class TriageExtractor:
         )
 
         plugins = [
-            # ("windows.netscan.NetScan", "netscan.jsonl"),
+            ("windows.netscan.NetScan", "netscan.jsonl"),
             ("windows.pslist.PsList", "pslist.jsonl"),
             (
                 "timeliner.Timeliner",
@@ -211,19 +211,25 @@ class TriageExtractor:
                 "-r",
                 "jsonl",
                 plugin,
-                "--plugin-filter",
-                "PsScan",  # Filter to speed up timeliner by only scanning for processes
-                "Threads",
-                "DllList",
-                "Amcache",
-                "ShimcacheMem",
-                "ScheduledTasks",
-                "NetScan",
-                "SymlinkScan",
-                "PsList",
-                "Sessions",
-                "UserAssist",
             ]
+            if plugin == "timeliner.Timeliner":
+                # Filter to speed up timeliner by only scanning for processes, network connections, and common Windows artifacts, excluding MFTScan which provides limited value
+                cmd.extend(
+                    [
+                        "--plugin-filter",
+                        "PsScan",
+                        "Threads",
+                        "DllList",
+                        "Amcache",
+                        "ShimcacheMem",
+                        "ScheduledTasks",
+                        "NetScan",
+                        "SymlinkScan",
+                        "PsList",
+                        "Sessions",
+                        "UserAssist",
+                    ]
+                )
             try:
                 with open(output_path, "w") as f:
                     subprocess.run(cmd, stdout=f, check=True)
