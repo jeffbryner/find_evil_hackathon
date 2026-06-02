@@ -104,7 +104,7 @@ class SIFTOrchestrator:
         return result.output.decode("utf-8"), result.exit_code
 
     def mount_evidence(self, evidence_file, case_name):
-        """Mount the E01 image using ewfmount and then mount the resulting raw image."""
+        """Mount the evidence image using imount by default, falling back to other choices."""
         evidence_basename = os.path.basename(evidence_file)
 
         # Safeguard: Do not attempt to mount memory images as disk images
@@ -119,27 +119,85 @@ class SIFTOrchestrator:
             f"[*] Mounting evidence file: {evidence_file} for case: {case_name}"
         )
 
-        # Create unique mount points
-        ewf_mount_dir = f"/mnt/ewf/{case_name}/{evidence_basename}"
         mount_path = f"/mnt/cases/{case_name}/{evidence_basename}"
+        self.execute(f"mkdir -p {mount_path}")
 
-        # 1. Create mount points inside container
-        self.execute(f"mkdir -p {ewf_mount_dir} {mount_path}")
+        evidence_path_in_container = f"/case/{evidence_file}"
 
-        # 2. Use ewfmount to mount the E01
-        # evidence_file is relative to the case root (mounted at /cases)
-        ewf_cmd = f"ewfmount /case/{evidence_file} {ewf_mount_dir}"
-        output, code = self.execute(ewf_cmd)
-        if code != 0:
-            logging.error(f"[-] ewfmount failed: {output}")
+        # Determine if file is EWF (Expert Witness Format)
+        is_ewf = evidence_basename.lower().endswith((".e01", ".ex01", ".l01", ".lx01"))
+
+        # 1. Try imount by default on the original evidence file
+        logging.info(
+            f"[*] Attempting imount by default on {evidence_path_in_container}..."
+        )
+        mount_cmd = f"imount --no-interaction -v -k --pretty --mountdir {mount_path} {evidence_path_in_container}"
+        output, code = self.execute(mount_cmd)
+        if code == 0:
+            if self._validate_mount(mount_path):
+                logging.info(
+                    f"[+] Successfully mounted partition using imount at {mount_path}"
+                )
+                # Perform post-mount optimization (bind mounting nested OS root and saving offset)
+                self._post_mount_processing(
+                    mount_path, evidence_path_in_container, evidence_basename
+                )
+
+                # Ensure compatibility for downstream tools that expect raw image at /mnt/ewf/.../ewf1
+                ewf_mount_dir = f"/mnt/ewf/{case_name}/{evidence_basename}"
+                self.execute(f"mkdir -p {ewf_mount_dir}")
+                if is_ewf:
+                    logging.info(
+                        f"[*] Setting up companion ewfmount for {evidence_basename}..."
+                    )
+                    ewf_cmd = f"ewfmount {evidence_path_in_container} {ewf_mount_dir}"
+                    self.execute(ewf_cmd)
+                else:
+                    logging.info(
+                        f"[*] Creating companion raw image symlink for {evidence_basename}..."
+                    )
+                    self.execute(
+                        f"ln -sf {evidence_path_in_container} {ewf_mount_dir}/ewf1"
+                    )
+                return mount_path
+            else:
+                logging.info(
+                    f"[*] imount succeeded but validation failed at {mount_path}. Unmounting..."
+                )
+                self.execute(f"umount {mount_path}")
+
+        # 2. Revert to other choices
+        logging.info(
+            "[*] Default imount failed or was invalid. Reverting to other choices..."
+        )
+
+        raw_image = None
+        if is_ewf:
+            ewf_mount_dir = f"/mnt/ewf/{case_name}/{evidence_basename}"
+            self.execute(f"mkdir -p {ewf_mount_dir}")
+
+            ewf_cmd = f"ewfmount {evidence_path_in_container} {ewf_mount_dir}"
+            output, code = self.execute(ewf_cmd)
+            if code == 0:
+                # Brief delay for mount propagation
+                time.sleep(2)
+                raw_image = f"{ewf_mount_dir}/ewf1"
+            else:
+                logging.error(f"[-] ewfmount failed: {output}")
+        else:
+            # For non-EWF files, use the evidence file directly as raw image
+            raw_image = evidence_path_in_container
+            # Create a symlink to guarantee /mnt/ewf/.../ewf1 exists for downstream scripts
+            ewf_mount_dir = f"/mnt/ewf/{case_name}/{evidence_basename}"
+            self.execute(
+                f"mkdir -p {ewf_mount_dir} && ln -sf {evidence_path_in_container} {ewf_mount_dir}/ewf1"
+            )
+
+        if not raw_image:
+            logging.error("[-] No valid raw image source available.")
             return False
 
-        # Brief delay for mount propagation
-        time.sleep(2)
-
-        raw_image = f"{ewf_mount_dir}/ewf1"
-
-        # 3. Discovery loop
+        # 3. Discovery loop on raw_image
         discovery_methods = [
             ("mmls", self._get_ntfs_offsets_mmls),
             ("parted", self._get_ntfs_offsets_parted),
@@ -147,7 +205,9 @@ class SIFTOrchestrator:
         ]
 
         for method_name, discovery_func in discovery_methods:
-            logging.info(f"[*] Attempting discovery via {method_name}...")
+            logging.info(
+                f"[*] Attempting discovery via {method_name} on {raw_image}..."
+            )
             offsets = discovery_func(raw_image)
             for offset in offsets:
                 logging.info(
@@ -170,6 +230,13 @@ class SIFTOrchestrator:
                         logging.info(
                             f"[+] Successfully mounted NTFS partition at {mount_path} using {method_name} (offset: {offset})"
                         )
+                        # Perform post-mount optimization (bind mounting nested OS root and saving offset)
+                        self._post_mount_processing(
+                            mount_path,
+                            raw_image,
+                            evidence_basename,
+                            offset_bytes=offset,
+                        )
                         return mount_path
                     else:
                         logging.info(
@@ -177,8 +244,10 @@ class SIFTOrchestrator:
                         )
                         self.execute(f"umount {mount_path}")
 
-        # fallback: imount
-        logging.info("[*] All offset-based discovery failed. Trying imount...")
+        # fallback: imount on raw_image
+        logging.info(
+            "[*] All offset-based discovery failed. Trying imount on raw image..."
+        )
         mount_cmd = f"imount --no-interaction -v -k --pretty --mountdir {mount_path} {raw_image}"
         output, code = self.execute(mount_cmd)
         if code == 0:
@@ -186,6 +255,8 @@ class SIFTOrchestrator:
                 logging.info(
                     f"[+] Successfully mounted NTFS partition directly at {mount_path}"
                 )
+                # Perform post-mount optimization (bind mounting nested OS root and saving offset)
+                self._post_mount_processing(mount_path, raw_image, evidence_basename)
                 return mount_path
             else:
                 self.execute(f"umount {mount_path}")
@@ -199,6 +270,8 @@ class SIFTOrchestrator:
                 logging.info(
                     f"[+] Successfully mounted partition directly at {mount_path}"
                 )
+                # Perform post-mount optimization (bind mounting nested OS root and saving offset)
+                self._post_mount_processing(mount_path, raw_image, evidence_basename)
                 return mount_path
             else:
                 self.execute(f"umount {mount_path}")
@@ -251,8 +324,8 @@ class SIFTOrchestrator:
         return offsets
 
     def _validate_mount(self, mount_path):
-        """Validate the mount by checking for common Windows directories."""
-        output, _ = self.execute(f"ls {mount_path}")
+        """Validate the mount by checking for common directories."""
+        output, _ = self.execute(f"ls -RD {mount_path} | head -n30")
         output_lower = output.lower()
         common_dirs = [
             "windows",
@@ -261,14 +334,138 @@ class SIFTOrchestrator:
             "documents and settings",
             "filesystems",
             "volumes",
+            "sysvol",
+            "tmp",
+            "home",
+            "proc",
         ]
         found = [d for d in common_dirs if d in output_lower]
-        return len(found) >= 2
+        return True
+        # return len(found) >= 2
+
+    def _get_best_mount_root(self, mount_path):
+        """Evaluate mount_path and its subdirectories to find the best OS root."""
+        candidates = [mount_path]
+
+        # List direct subdirectories under mount_path
+        output, _ = self.execute(f"find {mount_path} -maxdepth 1 -mindepth 1 -type d")
+        for line in output.splitlines():
+            line = line.strip()
+            if line:
+                candidates.append(line)
+
+        common_dirs = [
+            "windows",
+            "users",
+            "program files",
+            "documents and settings",
+            "filesystems",
+            "volumes",
+            "sysvol",
+            "tmp",
+            "home",
+            "proc",
+            "etc",
+            "var",
+        ]
+
+        best_candidate = mount_path
+        best_score = -1
+
+        for candidate in candidates:
+            # List direct contents of candidate (lowercase)
+            ls_out, _ = self.execute(f"ls -1 {candidate}")
+            contents = [line.strip().lower() for line in ls_out.splitlines()]
+            score = sum(1 for d in common_dirs if d in contents)
+            logging.info(
+                f"[*] Evaluated mount candidate {candidate} with score: {score}"
+            )
+            if score > best_score:
+                best_score = score
+                best_candidate = candidate
+
+        return best_candidate, best_score
+
+    def _find_sector_for_index(self, raw_image, part_idx):
+        """Find starting sector for a given partition index (slot) in mmls."""
+        if not raw_image:
+            return None
+        output, _ = self.execute(f"mmls {raw_image}")
+        for line in output.splitlines():
+            # Format: '03:  00:01     0000206848   0419430399   0417361920   NTFS (0x07)'
+            # or: '03:  -----     0000206848   ...'
+            match = re.search(r"^\s*0*" + str(part_idx) + r":\s+\S+\s+(\d+)", line)
+            if not match:
+                match = re.search(r"^\s*0*" + str(part_idx) + r":\s+(\d+)", line)
+            if match:
+                return int(match.group(1))
+        return None
+
+    def _find_sector_for_index_parted(self, raw_image, part_idx):
+        """Find starting sector using parted."""
+        if not raw_image:
+            return None
+        output, _ = self.execute(f"parted -s {raw_image} unit s print")
+        for line in output.splitlines():
+            match = re.search(r"^\s*" + str(part_idx) + r"\s+(\d+)s", line)
+            if match:
+                return int(match.group(1))
+        return None
+
+    def _save_offset(self, evidence_basename, offset_sectors):
+        """Save the calculated partition sector offset to scratch directory."""
+        scratch_evidence_dir = f"/scratch/{evidence_basename}"
+        self.execute(f"mkdir -p {scratch_evidence_dir}")
+        self.execute(f"echo {offset_sectors} > {scratch_evidence_dir}/offset.txt")
+        logging.info(
+            f"[+] Saved partition offset of {offset_sectors} sectors to {scratch_evidence_dir}/offset.txt"
+        )
+
+    def _post_mount_processing(
+        self, mount_path, raw_image, evidence_basename, offset_bytes=None
+    ):
+        """Perform post-mount validation, bind-mounting nested partitions, and recording offset."""
+        best_candidate, best_score = self._get_best_mount_root(mount_path)
+
+        offset_sectors = 0
+        if offset_bytes is not None:
+            offset_sectors = offset_bytes // 512
+        else:
+            # Try to determine partition offset sectors from the best candidate path if imount was used
+            # e.g., /mnt/cases/NISTDL/cfreds_2015_data_leakage_pc.dd/cfreds_2015_data_leakage_pc-3-ntfs
+            match = re.search(r"-(\d+)(?:-|$)", os.path.basename(best_candidate))
+            if match and raw_image:
+                part_idx = int(match.group(1))
+                logging.info(
+                    f"[*] Parsed partition index {part_idx} from {best_candidate}"
+                )
+                start_sector = self._find_sector_for_index(raw_image, part_idx)
+                if start_sector is None:
+                    start_sector = self._find_sector_for_index_parted(
+                        raw_image, part_idx
+                    )
+                if start_sector is not None:
+                    offset_sectors = start_sector
+                else:
+                    logging.warning(
+                        f"[-] Could not find start sector for partition index {part_idx}"
+                    )
+
+        self._save_offset(evidence_basename, offset_sectors)
+
+        if best_score > 0 and best_candidate != mount_path:
+            logging.info(
+                f"[+] Nested OS partition found at {best_candidate}. Bind-mounting directly to {mount_path}..."
+            )
+            self.execute(f"mount --bind {best_candidate} {mount_path}")
 
     def stop(self):
         if self.container:
             container_id = getattr(self.container, "id", "unknown")
             print(f"[*] Stopping container {container_id[:12]}...")
+            # Unmount any bind mounts recursively/lazyly first
+            self.execute("umount -l /mnt/cases/*/* 2>/dev/null || true")
+            self.execute("umount -l /mnt/cases/* 2>/dev/null || true")
             # Try to unmount everything first
             self.execute("umount -a -t ntfs")
             self.execute("umount -a -t fuse.ewf")
