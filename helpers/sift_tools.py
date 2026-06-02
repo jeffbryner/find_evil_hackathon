@@ -340,8 +340,7 @@ class SIFTOrchestrator:
             "proc",
         ]
         found = [d for d in common_dirs if d in output_lower]
-        return True
-        # return len(found) >= 2
+        return len(found) >= 2
 
     def _get_best_mount_root(self, mount_path):
         """Evaluate mount_path and its subdirectories to find the best OS root."""
@@ -472,7 +471,6 @@ class SIFTOrchestrator:
             self.execute("umount -a -t fuse.xmount")
             self.execute("umount -a -t fuse")
             self.container.stop()
-            # self.container.remove()
             print("[+] Container removed.")
 
 
