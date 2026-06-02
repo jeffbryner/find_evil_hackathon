@@ -88,15 +88,39 @@ class TriageExtractor:
         """Extract filesystem timeline using fls and mactime."""
         logging.info("[*] Extracting filesystem timeline...")
 
-        # In container: /cases is cases/<case_name>
-        # Evidence is in /cases/<case_name>images/
+        # In container
+        # Evidence source images are in /case/images/
         # mounts at /mnt/cases/<case_name>/<evidence_basename>
         # And ewfmount at /mnt/ewf/<case_name>/<evidence_basename>
 
         raw_image = f"/mnt/ewf/{self.real_case_name}/{self.evidence_name}/ewf1"
 
+        # Check for partition offset
+        offset_file = f"/scratch/{self.evidence_name}/offset.txt"
+        offset_output, offset_code = self.orchestrator.execute(
+            f"cat {offset_file} 2>/dev/null || true"
+        )
+        offset_output = offset_output.strip()
+
+        offset_cmd = ""
+        if offset_code == 0 and offset_output.isdigit():
+            offset_val = int(offset_output)
+            if offset_val > 0:
+                logging.info(
+                    f"[+] Found custom partition sector offset for fls: {offset_val}"
+                )
+                offset_cmd = f"-o {offset_val} "
+            else:
+                logging.info(
+                    "[*] Custom partition sector offset is 0, running fls without custom offset"
+                )
+        else:
+            logging.info(
+                "[*] No custom partition offset found, running fls without custom offset"
+            )
+
         # Inside container, /scratch is cases/<case_name>/scratch
-        cmd = f"bash -c 'mkdir -p /scratch/{self.evidence_name} && fls -r -m / {raw_image} > /scratch/{self.evidence_name}/bodyfile.txt'"
+        cmd = f"bash -c 'mkdir -p /scratch/{self.evidence_name} && fls -r -m / {offset_cmd}{raw_image} > /scratch/{self.evidence_name}/bodyfile.txt'"
         self.orchestrator.execute(cmd)
 
         # Run mactime replacement LOCALLY for speed and to avoid timeouts
