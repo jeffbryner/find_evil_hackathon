@@ -4,15 +4,15 @@ This reference documents common SQL hunting recipes for analyzing parsed email d
 
 ## Ingesting and Previewing Emails
 
-To load the parsed email Parquet database and view the schema:
+Using the `query_parquet.py` helper tool: 
 
 ```sql
 -- Preview schema and first 5 emails
-SELECT * FROM read_parquet('emails.parquet') LIMIT 5;
+SELECT * FROM emails LIMIT 5;
 
 -- Get total count of emails by source (allocated vs. recovered)
 SELECT source, count(*) as count 
-FROM read_parquet('emails.parquet') 
+FROM emails 
 GROUP BY source;
 ```
 
@@ -24,12 +24,12 @@ To identify emails discussing cloud storage services (like Google Drive, Dropbox
 
 ```sql
 SELECT delivery_time, sender_name, subject, body 
-FROM read_parquet('emails.parquet') 
-WHERE lower(subject) LIKE '%drive%' 
-   OR lower(body) LIKE '%drive%'
-   OR lower(body) LIKE '%dropbox%'
-   OR lower(body) LIKE '%file%'
-   OR body LIKE '%http%://%drive.google.com%'
+FROM emails 
+WHERE subject ILIKE '%drive%' 
+   OR body ILIKE '%drive%'
+   OR body ILIKE '%dropbox%'
+   OR body ILIKE '%file%'
+   OR body ILIKE '%http%://%drive.google.com%'
 ORDER BY delivery_time;
 ```
 
@@ -41,13 +41,13 @@ To identify discussions about external storage devices, physical delivery, or an
 
 ```sql
 SELECT delivery_time, sender_name, subject, body 
-FROM read_parquet('emails.parquet') 
-WHERE lower(subject) LIKE '%usb%' 
-   OR lower(body) LIKE '%usb%'
-   OR lower(subject) LIKE '%storage%'
-   OR lower(body) LIKE '%storage%'
-   OR lower(body) LIKE '%device%'
-   OR lower(body) LIKE '%eraser%'
+FROM emails
+WHERE subject ILIKE '%usb%' 
+   OR body ILIKE '%usb%'
+   OR subject ILIKE '%storage%'
+   OR body ILIKE '%storage%'
+   OR body ILIKE '%device%'
+   OR body ILIKE '%eraser%'
 ORDER BY delivery_time;
 ```
 
@@ -65,16 +65,16 @@ WITH parsed_emails AS (
     strptime(substring(delivery_time, 1, 20), '%b %d, %Y %H:%M:%S') AS email_time,
     sender_name,
     subject
-  FROM read_parquet('emails.parquet')
+  FROM emails
 )
 SELECT 
-  f.write_time,
-  f.file_path,
+  f.timestamp,
+  f.file_name_lower,
   e.email_time,
   e.sender_name,
   e.subject
-FROM read_parquet('fs_timeline.parquet') f
+FROM fs_timeline as f
 JOIN parsed_emails e 
-  ON abs(epoch(f.write_time) - epoch(e.email_time)) <= 600 -- within 10 minutes
-ORDER BY f.write_time;
+  ON abs(epoch(f.timestamp) - epoch(e.email_time)) <= 600 -- within 10 minutes
+ORDER BY f.timestamp ;
 ```

@@ -13,29 +13,29 @@ This skill provides standard operating procedures and automated scripts to parse
 Before exporting, verify the database content type and check for encryption or corruption using `pffinfo` inside the SIFT container:
 
 ```bash
-docker exec <container_name> pffinfo "/mnt/cases/<case_id>/<image_path>/path/to/database.ost"
+docker exec <container_name> pffinfo "/mnt/cases/<case_id>/<image_name>/path/to/database.ost"
 ```
 
 ### 2. Extract Database Contents
 Use `pffexport` to extract all allocated, orphan, and recovered items from the database. It is recommended to output the results to a directory in `/scratch/`:
 
 ```bash
-docker exec <container_name> pffexport -m all -t /scratch/ost_export "/mnt/cases/<case_id>/<image_path>/path/to/database.ost"
+docker exec <container_name> pffexport -m all -t /scratch/ost_export "/mnt/cases/<case_id>/<image_name>/path/to/database.ost"
 ```
 This will create:
-- `/scratch/ost_export.export` (Allocated items)
-- `/scratch/ost_export.recovered` (Orphan and recovered items)
+- `/scratch/<image_name>/ost_export.export` (Allocated items)
+- `/scratch/<image_name>/ost_export.recovered` (Orphan and recovered items)
 
 ### 3. Normalize and Parse Extracted Messages
 Run the automated `parse_emails.py` script to parse the extracted directories into structured JSON, Parquet, and Markdown formats:
 
 ```bash
 uv run .forge/skills/parse-email-databases/scripts/parse_emails.py \
-  -e cases/<case_id>/scratch/ost_export.export \
-  -r cases/<case_id>/scratch/ost_export.recovered \
-  -j cases/<case_id>/scratch/emails.json \
-  -p cases/<case_id>/scratch/parquet/emails.parquet \
-  -m cases/<case_id>/scratch/email_report.md
+  -e cases/<case_id>/scratch/<image_name>/ost_export.export \
+  -r cases/<case_id>/scratch/<image_name>/ost_export.recovered \
+  -j cases/<case_id>/scratch/<image_name>/emails.json \
+  -p cases/<case_id>/scratch/<image_name>/parquet/emails.parquet \
+  -m cases/<case_id>/scratch/<image_name>/email_report.md
 ```
 
 ### 4. Perform SQL Hunting
