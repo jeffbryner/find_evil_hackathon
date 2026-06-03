@@ -279,29 +279,68 @@ def convert_to_parquet(scratch_dir, parquet_dir, target_file=None):
                 parquet_path = os.path.join(parquet_dir, "fs_timeline.parquet")
                 logging.info(f"[*] Converting fs_timeline.csv to Parquet...")
                 try:
-                    sql = f"""
-                    COPY (
-                        SELECT 
-                            try_strptime("Date", '%a %b %d %Y %H:%M:%S') AS timestamp,
-                            'fs:mactime' AS data_type,
-                            'mactime' AS parser,
-                            "File Name" AS message,
-                            lower("File Name") AS file_name_lower,
-                            to_json({{
-                                'Size': "Size", 
-                                'Type': "Type", 
-                                'Mode': "Mode", 
-                                'UID': "UID", 
-                                'GID': "GID", 
-                                'Meta': "Meta"
-                            }}) AS details
-                        FROM read_csv_auto('{timeline_csv}', ignore_errors=true)
-                    ) TO '{parquet_path}' (FORMAT PARQUET)
-                    """
-                    con.execute(sql)
-                    logging.info(f"[+] Created {parquet_path}")
+                    # Check if the file has actual data lines beyond the header
+                    # A non-empty fs_timeline.csv must have at least 2 lines (header + 1 data line)
+                    has_data = False
+                    if (
+                        os.path.exists(timeline_csv)
+                        and os.path.getsize(timeline_csv) > 50
+                    ):
+                        with open(timeline_csv, "r") as f_in:
+                            lines = [f_in.readline() for _ in range(2)]
+                            if len(lines) >= 2 and lines[1].strip():
+                                has_data = True
+
+                    if has_data:
+                        sql = f"""
+                        COPY (
+                            SELECT 
+                                try_strptime("Date", '%a %b %d %Y %H:%M:%S') AS timestamp,
+                                'fs:mactime' AS data_type,
+                                'mactime' AS parser,
+                                "File Name" AS message,
+                                lower("File Name") AS file_name_lower,
+                                to_json({{
+                                    'Size': "Size", 
+                                    'Type': "Type", 
+                                    'Mode': "Mode", 
+                                    'UID': "UID", 
+                                    'GID': "GID", 
+                                    'Meta': "Meta"
+                                }}) AS details
+                            FROM read_csv_auto('{timeline_csv}', ignore_errors=true)
+                        ) TO '{parquet_path}' (FORMAT PARQUET)
+                        """
+                        con.execute(sql)
+                        logging.info(f"[+] Created {parquet_path}")
+                    else:
+                        raise Exception("fs_timeline.csv has no data lines.")
                 except Exception as e:
-                    logging.error(f"[-] Failed to convert timeline: {e}")
+                    logging.warning(
+                        f"[*] Timeline CSV is empty or invalid ({e}). Creating empty fallback Parquet..."
+                    )
+                    try:
+                        con.execute("DROP TABLE IF EXISTS empty_timeline;")
+                        con.execute("""
+                            CREATE TABLE empty_timeline (
+                                timestamp TIMESTAMP,
+                                data_type VARCHAR,
+                                parser VARCHAR,
+                                message VARCHAR,
+                                file_name_lower VARCHAR,
+                                details VARCHAR
+                            );
+                        """)
+                        con.execute(
+                            f"COPY empty_timeline TO '{parquet_path}' (FORMAT PARQUET)"
+                        )
+                        logging.info(
+                            f"[+] Created empty fallback Parquet at {parquet_path}"
+                        )
+                    except Exception as ex:
+                        logging.error(
+                            f"[-] Failed to create empty fallback Parquet: {ex}"
+                        )
 
         # 2. Unified Artifacts (from .plaso storage)
         elif file == "artifacts.plaso":
