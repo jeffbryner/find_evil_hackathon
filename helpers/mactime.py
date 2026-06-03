@@ -28,6 +28,11 @@ def main():
         print(f"Error: Bodyfile {args.bodyfile} not found.", file=sys.stderr)
         sys.exit(1)
 
+    if os.path.getsize(args.bodyfile) == 0:
+        # Bodyfile is empty. Just output the header line and exit 0.
+        print("Date,Size,Type,Mode,UID,GID,Meta,File Name")
+        sys.exit(0)
+
     con = duckdb.connect(database=":memory:")
     con.create_function("unquote_path", unquote_path, ["VARCHAR"], "VARCHAR")
 
@@ -51,8 +56,13 @@ def main():
             FROM read_csv('{args.bodyfile}', delim='|', header=False, quote='', ignore_errors=True);
         """)
     except Exception as e:
-        print(f"Error reading bodyfile: {e}", file=sys.stderr)
-        sys.exit(1)
+        # If it failed to read because it's invalid or empty, print the header and exit 0
+        print(
+            f"Warning: Bodyfile is invalid or empty ({e}). Writing header-only timeline.",
+            file=sys.stderr,
+        )
+        print("Date,Size,Type,Mode,UID,GID,Meta,File Name")
+        sys.exit(0)
 
     # Unpivot timestamps
     con.execute("""
