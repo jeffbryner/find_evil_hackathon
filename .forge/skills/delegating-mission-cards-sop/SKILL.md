@@ -90,6 +90,35 @@ To ensure transparency, reproducibility, and a clear chain of custody, you **MUS
 - **Contents Required:**
   - The exact initial prompt/mission parameters received.
   - A chronological log of every tool call executed, including the exact arguments passed and an extremely brief summary of the raw output received. (Useful, not useful, smoking gun, etc.)
-  - Your internal reasoning or SQL queries/commands executed (e.g., the exact `SELECT` statements or `fls`/`icat` commands run).
-  - This ensures a complete, automatic LLM audit trail that allows human investigators to validate and reconstruct your findings exactly.
+  - **ALL Executed Queries & Commands (Strict Completeness):** You MUST log 100% of the raw SQL queries, shell commands, and specialized forensic tool commands executed during your mission. Do NOT summarize, group, truncate, or omit any query/command. If you ran a query that returned an error or yielded no results, you must still log it in its entirety along with its outcome.
+  - **Self-Audit Verification:** Before saving the audit file and submitting your report, cross-reference your internal monologue's tool call history against your chronological log and SQL section. Verify that:
+    1. The total count of logged tool calls matches your final Budget Tally.
+    2. Every single command or SELECT statement you ran is present in the SQL section in its raw, copy-pasteable format.
+
+### Mandatory Forensic Audit Trail Template
+The target agent MUST use the following structure for the `-audit.md` file:
+
+```markdown
+# Forensic Audit Trail: [Mission Name]
+
+## 1. Initial Prompt & Parameters
+[Initial instructions, targets, and budgets]
+
+## 2. Chronological Tool Execution Log
+- **Tool Call #1:** `[Tool Name]` with arguments `[Args]` -> *Outcome: [Brief summary]*
+- **Tool Call #2:** ...
+
+## 3. All Executed SQL Queries & Shell Commands (In Full)
+Every single command or SQL statement run MUST be documented below in its raw form:
+
+### Query/Command 1: [Short description of intent]
+\```sql
+[Full SQL Statement or Shell Command]
+\```
+*Result: [E.g., Returned 15 rows / Error: column not found / No results]*
+
+### Query/Command 2: ...
+```
+
+This ensures a complete, automatic LLM audit trail that allows human investigators to validate and reconstruct your findings exactly.
 
