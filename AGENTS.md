@@ -21,6 +21,9 @@ The goal is to conduct forensic analysis using AI as efficiently as possible to 
 - Use `uv` for any python work to ensure the global python environment is unaffected: ```uv run <script.py>``` not ```python3 script.py```
 - To ensure forensic integrity do not modify any evidence images (disk, memory, etc)
 - **IMPORTANT:** When updating files ALWAYS prefer the `patch` tool over the `write` tool. Using `patch` significantly reduces context token bloat by only sending the diffs.**
+- **File Creation & Overwrite Guardrails:** 
+  - To create a brand-new file, use the `write` tool with `overwrite: false`.
+  - To overwrite or modify an existing file, you MUST use the `read` tool first to read the file's contents, and then use the `write` tool with `overwrite: true` or the `patch` tool. Attempting to write with `overwrite: true` on a non-existent file or without reading it first will fail.
 
 ## AI Agent Operating Requirements
 - **Agents must operate as a team:** There are Standard Operating Procedures (SOPs) formatted as skills that define procedures for task delegation, information sharing and case reporting. These must be followed at all times.
