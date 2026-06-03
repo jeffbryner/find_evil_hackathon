@@ -84,3 +84,12 @@ Complete the mission according to the instructions in the card and add a results
 - NPS: A brief post mortem of the task, including any feedback or suggestions for improvement.
 - Your budget tally
 
+### Mandatory Forensic Audit Trail
+To ensure transparency, reproducibility, and a clear chain of custody, you **MUST** automatically write a detailed forensic audit trail of your entire execution history to a separate file.
+- **File Name Format:** Exactly the same name as the mission card you are updating, but with `-audit.md` instead of `.md` (e.g., if the card is `001-mission-data-analyst-inventory-and-triage.md`, the audit file MUST be `001-mission-data-analyst-inventory-and-triage-audit.md` in the same directory).
+- **Contents Required:**
+  - The exact initial prompt/mission parameters received.
+  - A chronological log of every tool call executed, including the exact arguments passed and an extremely brief summary of the raw output received. (Useful, not useful, smoking gun, etc.)
+  - Your internal reasoning or SQL queries/commands executed (e.g., the exact `SELECT` statements or `fls`/`icat` commands run).
+  - This ensures a complete, automatic LLM audit trail that allows human investigators to validate and reconstruct your findings exactly.
+
