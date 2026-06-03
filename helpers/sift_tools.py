@@ -302,6 +302,43 @@ class SIFTOrchestrator:
                     offsets.append(int(match.group(1)))
         return offsets
 
+    def _get_all_partition_offsets_mmls(self, raw_image):
+        """Find start sectors of all valid data partitions using mmls."""
+        if not raw_image:
+            return []
+        output, _ = self.execute(f"mmls {raw_image}")
+        offsets = []
+        for line in output.splitlines():
+            # Exclude metadata and unallocated space
+            if any(
+                x in line for x in ["Meta", "Unallocated", "Table", "Extended", "-----"]
+            ):
+                continue
+            # Look for a line with partition slot and start sector
+            # Format: '02:  00:00     0000000128   0000204799   0000204672   FAT32 (0x0c)'
+            match = re.search(r"^\s*\d+:\s+\S+\s+(\d+)", line)
+            if not match:
+                match = re.search(r"^\s*\d+:\s+(\d+)", line)
+            if match:
+                start_sector = int(match.group(1))
+                offsets.append(start_sector)
+        return offsets
+
+    def _get_all_partition_offsets_parted(self, raw_image):
+        """Find start sectors of all valid partitions using parted."""
+        if not raw_image:
+            return []
+        output, _ = self.execute(f"parted -s {raw_image} unit s print")
+        offsets = []
+        for line in output.splitlines():
+            # parted output units are in sectors:
+            # Number  Start      End        Size       File system  Name  Flags
+            #  1      128s       204799s    204672s    fat32
+            match = re.search(r"^\s*\d+\s+(\d+)s", line)
+            if match:
+                offsets.append(int(match.group(1)))
+        return offsets
+
     def _get_ntfs_offsets_bruteforce(self, raw_image):
         """Brute-force scan for NTFS headers in the first 1GB."""
         # We look for the NTFS signature 'NTFS    ' (EB 52 90 4E 54 46 53 20)
@@ -324,23 +361,9 @@ class SIFTOrchestrator:
         return offsets
 
     def _validate_mount(self, mount_path):
-        """Validate the mount by checking for common directories."""
-        output, _ = self.execute(f"ls -RD {mount_path} | head -n30")
-        output_lower = output.lower()
-        common_dirs = [
-            "windows",
-            "users",
-            "program files",
-            "documents and settings",
-            "filesystems",
-            "volumes",
-            "sysvol",
-            "tmp",
-            "home",
-            "proc",
-        ]
-        found = [d for d in common_dirs if d in output_lower]
-        return len(found) >= 2
+        """Validate the mount by verifying it lists at least one file or folder."""
+        output, _ = self.execute(f"ls -A {mount_path}")
+        return len(output.strip()) > 0
 
     def _get_best_mount_root(self, mount_path):
         """Evaluate mount_path and its subdirectories to find the best OS root."""
@@ -449,6 +472,26 @@ class SIFTOrchestrator:
                     logging.warning(
                         f"[-] Could not find start sector for partition index {part_idx}"
                     )
+            elif best_candidate == mount_path and raw_image:
+                # If there are no nested subdirectories but the image contains partitions
+                # we query mmls or parted to find the start sector of the primary/single partition
+                logging.info(
+                    f"[*] Best candidate is the mount root itself. Discovering partition offsets for {raw_image}..."
+                )
+                mmls_offsets = self._get_all_partition_offsets_mmls(raw_image)
+                if mmls_offsets:
+                    logging.info(
+                        f"[+] Found partition start sectors via mmls: {mmls_offsets}"
+                    )
+                    # If we found partition offsets, use the first one as default
+                    offset_sectors = mmls_offsets[0]
+                else:
+                    parted_offsets = self._get_all_partition_offsets_parted(raw_image)
+                    if parted_offsets:
+                        logging.info(
+                            f"[+] Found partition start sectors via parted: {parted_offsets}"
+                        )
+                        offset_sectors = parted_offsets[0]
 
         self._save_offset(evidence_basename, offset_sectors)
 
