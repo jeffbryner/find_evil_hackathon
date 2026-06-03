@@ -122,7 +122,8 @@ Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippet
 
 ## Workflow Strategy
 - **Discover**: Run with `--schema` to see what artifacts were successfully extracted. Tables with 'memory' in the name are from volatility and will not include a json/details column.
-- **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser LIKE '%Registry%'`).
+- **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser ILIKE '%Registry%'`).
+- **Mandatory Case-Insensitive Queries (ILIKE)**: ALWAYS use `ILIKE` instead of `LIKE` when searching for file paths, names, extensions, registry keys, URLs, or other text strings to prevent missing critical evidence due to case mismatch. NEVER use `lower(field) LIKE '%value%'` as it is inefficient, verbose, and unnecessary in DuckDB.
 - **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` on `timestamp` to see what the system was doing when a specific file was created.
 - **Unified View**: Using --evidence all (or omitting evidence) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
 - **Forbid Inline Scripting for Output Parsing**: NEVER use inline Python (`python3 -c "..."`) and Regex to scrape or parse truncated terminal output. If a query returns long strings (like Base64 PowerShell commands or JSON blobs) that get truncated, you MUST use structured output formats (like JSONL) or DuckDB's native export functions to save the full results to a file in the `scratch/` directory for analysis.
