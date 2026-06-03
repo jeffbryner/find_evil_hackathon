@@ -3,3 +3,4 @@ __pycache__
 plans
 cases/
 recordings/
+.DS_Store
