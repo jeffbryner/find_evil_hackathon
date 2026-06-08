@@ -4,7 +4,7 @@ title: "Expert in leading computer forensics investigations"
 description: Expert forensic investigator specialized leading computer forensic cases. Use this agent to perform end-to-end forensic investigations, orchestrating sub-agents to validate hypotheses.
 reasoning:
   enabled: true
-  effort: high
+  effort: max
   exclude: false
 provider: vertex_ai
 model: gemini-3.5-flash
