@@ -96,11 +96,11 @@ To ensure transparency, reproducibility, and a clear chain of custody, you **MUS
 - **File Name Format:** Exactly the same name as the mission card you are updating, but with `-audit.md` instead of `.md` (e.g., if the card is `001-mission-data-analyst-inventory-and-triage.md`, the audit file MUST be `001-mission-data-analyst-inventory-and-triage-audit.md` in the same directory).
 - **Contents Required:**
   - The exact initial prompt/mission parameters received.
-  - A chronological log of every tool call executed, including the exact arguments passed and an extremely brief summary of the raw output received. (Useful, not useful, smoking gun, etc.)
-  - **ALL Executed Commands (Strict Completeness):** You MUST log 100% of the shell commands, and specialized forensic tool commands executed during your mission. Do NOT summarize, group, truncate, or omit any query/command. If you ran a command that returned an error or yielded no results, you must still log it in its entirety along with its outcome.
+  - A chronological log of every tool call executed, including the exact, complete arguments passed (with NO truncation, NO ellipses `...`, and NO placeholder summaries) and an extremely brief summary of the raw output received. (Useful, not useful, smoking gun, etc.)
+  - **ALL Executed Commands (Strict Completeness):** You MUST log 100% of the shell commands, and specialized forensic tool commands executed during your mission. Do NOT summarize, group, truncate, or omit any query/command. If you ran a command that returned an error or yielded no results, you must still log it in its entirety along with its outcome. The use of ellipses `...` or placeholder text is strictly forbidden.
   - **Self-Audit Verification:** Before saving the audit file and submitting your report, cross-reference your internal monologue's tool call history against your chronological log section. Verify that:
     1. The total count of logged tool calls matches your final Budget Tally.
-    2. Every single command ran is present in its raw, copy-pasteable format including the full text of the command.
+    2. Every single command ran is present in its raw, copy-pasteable format including the full, exact text of the command with all arguments intact.
 
 #### Examples:
 
