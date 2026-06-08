@@ -84,6 +84,27 @@ FROM fs_timeline f
 JOIN iocs i ON f.message ILIKE '%' || i.value || '%';
 ```
 
+## Querying SQLite Databases Natively in DuckDB
+
+DuckDB has a built-in `sqlite_scan` function that allows querying SQLite database files directly without any conversion. This is extremely powerful for analyzing communication databases (like Skype `main.db`), browser databases, or other application SQLite files:
+
+### Basic Syntax
+```sql
+SELECT * FROM sqlite_scan('path/to/database.db', 'table_name');
+```
+
+### Joining SQLite Data with Parquet Timelines
+You can seamlessly join data from a local SQLite database with your Parquet-based filesystem timelines:
+```sql
+SELECT f.timestamp, f.message, s.author, s.body_xml
+FROM fs_timeline f
+JOIN sqlite_scan('cases/<CASEID>/scratch/skype/main.db', 'Messages') s 
+  ON f.timestamp = epoch_to_timestamp(s.timestamp)
+WHERE s.body_xml ILIKE '%secret%';
+```
+
+
+
 ## Custom Event Schema Contract
 
 When sub-agents parse custom databases or non-standard logs (such as a recovered Outlook PST email archive), they should format their extracted events to match the standardized timeline schema so they can be merged or queried alongside `fs_timeline` and `artifacts_timeline`.
