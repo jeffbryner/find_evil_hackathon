@@ -18,8 +18,10 @@ All agents **MUST** use this skill to properly delegate and execute tasks while 
   - Never remove sections, append new content instead.
   - Keep entries concise and agent/parsing friendly (markdown todo lists for example)
   - Budget in increments of 5 tool calls to stay parsable and easy to understand at a glance. 
-  - Execution budgets should be between 10-50 tool calls depending on the complexity of the task. 
-  - Orientation and reporting budgets should be between 5-15 tool calls.
+  - Execution budgets should be between 10-20 tool calls depending on the complexity of the task. SIMPLE tasks are better than multi-stage complext tasks.
+  - Orientation and reporting budgets should be between 5-10 tool calls.
+  - **The Living Mission Card Rule:** Target agents MUST update the mission card and audit trail file on disk every 5–10 tool calls to checkpoint progress and prevent state loss.
+  - **No Relaunching Failed Missions:** If a mission is interrupted or self-terminates, it must be recorded as `[partially_completed]` with its partial audit log saved. To continue, the Case Lead MUST create a *new* mission card (e.g., `009-mission-...`) referencing the previous one, ensuring a complete forensic trail of the investigation.
 
 ## Instructions for the Delegating Agent:
 ### Mission Cards
@@ -43,6 +45,7 @@ You **MUST** use the following exact Markdown template when creating the file:
 - **Orientation Budget:** [X] tool calls
 - **Execution Budget:** [Y] tool calls
 - **Reporting Budget:** [Z] tool calls
+- **Proactive Self-Termination:** At tool call X (80% of total budget), immediately cease active forensics and use remaining calls to write out partial findings and exit cleanly.
 - **Fail-Fast Condition:** [Explicit instructions on when the agent should give up, e.g., "If the file is not found in 5 searches, stop and report."]
 
 ## Task Checklist
@@ -72,6 +75,10 @@ When tasking sub agents with a delegated task:
 - Pay special attention to the goals and the budget given to you to stay within the specified limits.
 - Before executing any forensic tools, you **MUST** explicitly state the budget and fail-fast conditions you are operating under in your first response. 
 - If you cannot achieve the goals within the budget, report back with a status update and records your attempts in the mission card. It is ok to not complete the entire mission, but you must report your progress, any issues encountered and a note about exhausting the budget.
+
+### Living Mission Card & State Checkpointing
+- **MANDATORY CHECKPOINTING:** To prevent token or request limit exhaustion from erasing all progress, you MUST use the `patch` tool to update your current progress back to the mission card and the `-audit.md` file on disk after every major milestone or every 5–10 tool calls.
+- **PROACTIVE SELF-TERMINATION:** Track your tool call count. If you reach 40 tool calls (or 80% of your total budget), immediately cease active forensic work. Use your remaining tool calls to perform a final update to the mission card on disk, set its status to `[partially_completed]`, detail what has been done and what remains, write your audit log, and exit cleanly. Do not run until a platform abort occurs as your work will be lost.
 
 ### Completing the Mission
 **IMPORTANT:** When instructed to update a document, report, or mission card, you MUST use the `patch`or `write` tools to modify the file on the filesystem. Providing the updated text only in your conversational response does not fulfill the requirement and is considered a failure. **Your mission is only complete when the mission card is updated and saved.**
