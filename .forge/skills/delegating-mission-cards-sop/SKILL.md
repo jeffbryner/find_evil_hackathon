@@ -18,7 +18,7 @@ All agents **MUST** use this skill to properly delegate and execute tasks while 
   - Never remove sections, append new content instead.
   - Keep entries concise and agent/parsing friendly (markdown todo lists for example)
   - Budget in increments of 5 tool calls to stay parsable and easy to understand at a glance. 
-  - Execution budgets should be between 10-20 tool calls depending on the complexity of the task. SIMPLE tasks are better than multi-stage complext tasks.
+  - Execution budgets should be between 10-20 tool calls. Design the mission to meet the budget. SIMPLE tasks are better than multi-stage complex tasks.
   - Orientation and reporting budgets should be between 5-10 tool calls.
   - **The Living Mission Card Rule:** Target agents MUST update the mission card and audit trail file on disk every 5–10 tool calls to checkpoint progress and prevent state loss.
   - **No Relaunching Failed Missions:** If a mission is interrupted or self-terminates, it must be recorded as `[partially_completed]` with its partial audit log saved. To continue, the Case Lead MUST create a *new* mission card (e.g., `009-mission-...`) referencing the previous one, ensuring a complete forensic trail of the investigation.
