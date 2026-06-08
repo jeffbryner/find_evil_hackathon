@@ -1,6 +1,6 @@
 ---
 name: extract-triage-artifacts
-description: Extract forensic artifacts from disk images using the Dissect framework (target-query, target-reg). Use this skill when you need to quickly retrieve system info, registry keys, browser history, or other OS artifacts and optionally convert them to Parquet format for SQL analysis.
+description: Extract forensic artifacts from disk images using the Dissect framework (target-query, target-reg). Use this skill when you need to quickly retrieve basic system information, registry keys, browser history, or other targeted OS artifacts and optionally convert them to Parquet format for SQL analysis.
 ---
 
 # Extract Triage Artifacts
@@ -12,7 +12,40 @@ The Dissect framework provides a set of utilities (`target-*`) to quickly retrie
 ### 1. target-info
 Get general information about an image (hostname, OS version, IPs, timezone).
 ```shell
-uv run target-info -q <forensic_disk_image_filename>
+uv run target-info -q cases/<CASEID>/images/<DRIVE_IMAGE_FILENAME>
+```
+Sample output:
+```<Target cases/<CASEID>/images/<DRIVE_IMAGE_FILENAME>>
+
+Disks
+- <Disk type='ewf' size=1234567890>
+
+Volumes
+- <Volume name='Basic data partition' size=377486848 fs='ntfs'>
+- <Volume name='EFI system partition' size=209714688 fs='fat'>
+- <Volume name='Microsoft reserved partition' size=134217216 fs=None>
+- <Volume name='Basic data partition' size=118212263424 fs='ntfs'>
+- <Volume name='part_1bb1100000' size=471858688 fs='ntfs'>
+- <Volume name='Basic data partition' size=5662309888 fs='ntfs'>
+
+Mounts
+- <Mount fs='ntfs' path='sysvol'>
+- <Mount fs='fat' path='efi'>
+- <Mount fs='ntfs' path='c:'>
+- <Mount fs='ntfs' path='/$fs$/fs0'>
+- <Mount fs='ntfs' path='/$fs$/fs1'>
+- <Mount fs='ntfs' path='/$fs$/fs2'>
+
+Hostname       : ANAME
+Domain         : None
+Ips            : 192.168.0.103, 192.168.0.141
+Os family      : windows
+Os version     : Windows 10 Pro (NT 10.0) 10586.420
+Architecture   : amd64-win64
+Language       : en_US
+Timezone       : America/New_York
+Install date   : 2016-03-15T11:04:06.000000+00:00
+Last activity  : 2016-11-04T14:45:48.456490+00:00
 ```
 
 ### 2. target-query
@@ -29,7 +62,7 @@ uv run target-query <forensic_disk_image_filename> -f <plugin> -qs
 ### 3. target-reg
 Query registry hives or keys directly.
 ```shell
-uv run target-reg <forensic_disk_image_filename> -k "HKEY_LOCAL_MACHINE\\Software\\..." -d 2 -q
+uv run target-reg cases/<CASEID>/images/<DRIVE_IMAGE_FILENAME> -k "HKEY_LOCAL_MACHINE\\Software\\" -d 2 -q
 ```
 - `-k`: Registry key name (escape backslashes).
 - `-d`: Depth level of traversal.

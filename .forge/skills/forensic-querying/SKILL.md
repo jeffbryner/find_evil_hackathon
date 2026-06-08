@@ -56,7 +56,7 @@ To extract specific fields from the `details` column, use the DuckDB JSON operat
 ```sql
 SELECT message, details->>'key_path' as key_path 
 FROM artifacts_timeline 
-WHERE data_type LIKE 'windows:registry%';
+WHERE data_type ILIKE 'windows:registry%';
 ```
 
 ## Tracking and Querying IOCs
@@ -81,7 +81,7 @@ SELECT * FROM iocs;
 -- Find filesystem activity related to known IOCs
 SELECT f.timestamp, f.message, i.type, i.value as matched_ioc
 FROM fs_timeline f
-JOIN iocs i ON f.message LIKE '%' || i.value || '%';
+JOIN iocs i ON f.message ILIKE '%' || i.value || '%';
 ```
 
 ## Custom Event Schema Contract
@@ -121,11 +121,11 @@ Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippet
 7. Advanced DuckDB querying (Base64 decoding, JSON parsing).
 
 ## Workflow Strategy
-- **Discover**: Run with `--schema` to see what artifacts were successfully extracted. Tables with 'memory' in the name are from volatility and will not include a json/details column.
+- **Discover**: Run  `uv run helpers/query_parquet.py --case <CASEID> --schema` to see what artifacts were successfully extracted. Tables with 'memory' in the name are from volatility and will not include a json/details column.
 - **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser ILIKE '%Registry%'`).
 - **Mandatory Case-Insensitive Queries (ILIKE)**: ALWAYS use `ILIKE` instead of `LIKE` when searching for file paths, names, extensions, registry keys, URLs, or other text strings to prevent missing critical evidence due to case mismatch. NEVER use `lower(field) LIKE '%value%'` as it is inefficient, verbose, and unnecessary in DuckDB.
 - **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` on `timestamp` to see what the system was doing when a specific file was created.
-- **Unified View**: Using --evidence all (or omitting evidence) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
+- **Unified View**: Using `--evidence all` (or omitting `--evidence`) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
 - **Forbid Inline Scripting for Output Parsing**: NEVER use inline Python (`python3 -c "..."`) and Regex to scrape or parse truncated terminal output. If a query returns long strings (like Base64 PowerShell commands or JSON blobs) that get truncated, you MUST use structured output formats (like JSONL) or DuckDB's native export functions to save the full results to a file in the `scratch/` directory for analysis.
 - **Maximize Native SQL**: Leverage DuckDB's native string manipulation, regex extraction (`regexp_extract`), and decoding functions (`from_base64`) directly within your SQL queries to process data efficiently, rather than pulling raw data into Python for processing.
 - **Avoid Rabbit Holes (Fail-Fast)**: If a query returns no results after initial attempts, or if the required table/evidence does not exist, stop querying. Do not blindly guess table names or run unconstrained wildcard searches across the entire database. Return a concise report stating that the artifact was not found, what you tried and move on. Respect any "max attempts" or "time-box" constraints given to you in your task description.

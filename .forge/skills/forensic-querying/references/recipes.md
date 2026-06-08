@@ -3,7 +3,7 @@
 Use these SQL recipes as templates for common investigative tasks.
 
 ## Case insensitive querying
-Make use of the `ILIKE` SQL statement instead of simply using `LIKE` and having to worry about case sensitivity.
+ALWAYS use the `ILIKE` SQL statement instead of simply using `LIKE` and having to worry about case sensitivity.
 ```sql
 SELECT timestamp, message as file_name, details->>'Type' as macb from fs_timeline where message ILIKE '%.zip'
 ```
@@ -103,7 +103,7 @@ If executing via the command line utility `query_parquet.py` you'll need to esca
 uv run helpers/query_parquet.py --case <CASEID> "SELECT
     timestamp,
     decode(from_base64(regexp_extract(message, 'EncodedCommand \"([^\"]+)\"', 1)),'ignore') as decoded_command
-from artifacts_timeline WHERE parser = 'winevtx' AND message LIKE '%EncodedCommand%'"
+from artifacts_timeline WHERE parser = 'winevtx' AND message ILIKE '%EncodedCommand%'"
 ```
 
 ## Exporting Long Data with JSONL

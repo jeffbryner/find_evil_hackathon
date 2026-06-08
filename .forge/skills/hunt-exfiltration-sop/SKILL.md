@@ -51,7 +51,13 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-exfiltra
     ```
     Additionally, check for local configuration files or databases of cloud synchronization clients (e.g., Google Drive's `sync_config.db`, OneDrive settings, Dropbox databases) within the filesystem timeline under the user's `%APPDATA%` or `%LOCALAPPDATA%` folders.
 
-5.  **Analyze Findings & Log IOCs:**
+5. **Query remote drive attachments:**
+    Execute the following SQL to find evidence of remote share attachments that could be used for staging or exfiltration:
+    ```sql
+    SELECT timestamp, data_type, message,details,details->>'type' as type FROM artifacts_timeline WHERE data_type = 'windows:registry:mount_points2' and  type!='Volume'
+    ``` 
+
+6.  **Analyze Findings & Log IOCs:**
     Correlate the timestamps of archive creation with large outbound network connections, cloud account logins, or the execution of tunneling tools (e.g., PowerShell reverse port-forwards).
     
     **CRITICAL:** For any identified suspicious IP, domain, file path, registry key, or hash, you **MUST** immediately register it as an Indicator of Compromise (IOC) using `ioc_tracker.py` before completing your turn. This ensures parallel sub-agents can automatically correlate and join your findings.
@@ -61,5 +67,5 @@ Use this skill when the Case Lead delegates a task to "Execute the hunt-exfiltra
     uv run helpers/ioc_tracker.py --case <case_name> --add ip --value "52.249.198.56" --source hunt-exfiltration-sop
     ```
 
-6.  **Report:**
+7.  **Report:**
     Return a structured summary of potential staging directories, created archives (including size and path), any correlated network exfiltration events, identified cloud account identities, and a list of logged IOCs.
