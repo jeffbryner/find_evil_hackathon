@@ -100,7 +100,15 @@ To ensure transparency, reproducibility, and a clear chain of custody, you **MUS
   - **ALL Executed Commands (Strict Completeness):** You MUST log 100% of the shell commands, and specialized forensic tool commands executed during your mission. Do NOT summarize, group, truncate, or omit any query/command. If you ran a command that returned an error or yielded no results, you must still log it in its entirety along with its outcome.
   - **Self-Audit Verification:** Before saving the audit file and submitting your report, cross-reference your internal monologue's tool call history against your chronological log section. Verify that:
     1. The total count of logged tool calls matches your final Budget Tally.
-    2. Every single command ran is present in its raw, copy-pasteable format.
+    2. Every single command ran is present in its raw, copy-pasteable format including the full text of the command.
+
+#### Examples:
+
+**CORRECT AUDIT LOGGING:**
+- **Tool Call #20:** `shell` with `{"command": "uv run helpers/query_parquet.py --case CASEID --query \"SELECT count(*) FROM artifacts_timeline WHERE timestamp >= '2016-06-20 00:00:00+00' AND timestamp <= '2016-06-25 23:59:59+00'\""}` -> *Outcome: Counted 11,829 artifacts_timeline entries in the target date range.*
+
+**INCORRECT AUDIT LOGGING:**
+- **Tool Call #16:** `shell` with query for external drive letters in `artifacts_timeline` excluding EVTX
 
 ### Mandatory Forensic Audit Trail Template
 The target agent MUST use the following structure for the `-audit.md` file:

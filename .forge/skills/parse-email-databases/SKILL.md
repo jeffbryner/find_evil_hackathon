@@ -27,7 +27,9 @@ This will create:
 - `/scratch/<image_name>/ost_export.recovered` (Orphan and recovered items)
 
 ### 3. Normalize and Parse Extracted Messages
-Run the automated `parse_emails.py` script to parse the extracted directories into structured JSON, Parquet, and Markdown formats:
+Run the automated `parse_emails.py` script to parse the extracted directories into structured JSON, Parquet, and Markdown formats.
+
+It is important to include the <image_name> in the output paths so parquet files are organized by image and can be easily queried in the DuckDB pipeline later.
 
 ```bash
 uv run .forge/skills/parse-email-databases/scripts/parse_emails.py \

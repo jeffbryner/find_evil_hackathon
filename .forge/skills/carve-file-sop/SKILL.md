@@ -12,8 +12,15 @@ Use this skill when the Case Lead delegates a task to "Execute the carve-file-so
 
 ## Execution Steps
 
-1.  **Locate the Inode (fls):**
-    First, use `fls` to search the directory structure of the disk image to find the inode number of the target file.
+1.  **Locate the Inode **
+
+    **Option: via parquet search:**
+    Use `uv run helpers/query-parquet.py` to search the parquet file for the target file name and retrieve its inode number.
+    ```bash
+    uv run helpers/query-parquet.py --case <CASE_NAME> --query "SELECT details->>'Meta' as inode,* FROM fs_timeline WHERE file_name_lower ILIKE '%<TARGET_FILE_NAME>%'"
+    ```
+    **Option: via fls:**
+    Use `fls` to search the directory structure of the disk image to find the inode number of the target file.
     ```bash
     docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) fls -r /mnt/cases/<CASE_NAME>/<IMAGE_NAME> | grep -i "<TARGET_FILE_NAME>"
     ```
