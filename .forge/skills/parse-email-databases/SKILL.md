@@ -20,7 +20,7 @@ docker exec <container_name> pffinfo "/mnt/cases/<case_id>/<image_name>/path/to/
 Use `pffexport` to extract all allocated, orphan, and recovered items from the database. It is recommended to output the results to a directory in `/scratch/`:
 
 ```bash
-docker exec <container_name> pffexport -m all -t /scratch/ost_export "/mnt/cases/<case_id>/<image_name>/path/to/database.ost"
+docker exec <container_name> pffexport -q -m all -t /scratch/ost_export "/mnt/cases/<case_id>/<image_name>/path/to/database.ost"
 ```
 This will create:
 - `/scratch/<image_name>/ost_export.export` (Allocated items)
