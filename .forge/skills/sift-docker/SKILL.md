@@ -9,18 +9,18 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
 
 ## Core Concepts
 
-- **Container ID**: Always stored locally in `cases/<CASE_NAME>/scratch/container_id.txt`.
+- **Container ID**: Always stored locally in `cases/<CASE_NAME>/scratch/container_id.txt`. The Container name will match the case name for easy reference.
 - **Persistent Environment**: Use a single SIFT container for the entire case.
-- **Evidence Mounts**: All local files are accessible in the docker image via `/case`. Mounted filesystems live under `/mnt/cases/<case_name>/<image_name>`. Scratch space is shared at `/scratch`.
+- **Evidence Mounts**: All local files are accessible in the docker image via `/case` (which is Read-Only). Mounted filesystems live under `/mnt/cases/<case_name>/<image_name>/` (where `<image_name>` matches the filename of the evidence image, e.g. `surface_physical.E01`). Scratch space is shared at `/scratch/` (which is Read-Write).
 - **Local to Container Mapping**: 
 
 | Context | Base Path | Purpose |
 | :--- | :--- | :--- |
-| **Local Host** | `cases/<case_name>/images/` | Source E01/Memory images |
-| **SIFT Container (Filesystem)** | `/mnt/cases/<case_name>/<image>/` | Direct file access (ls, cp, exiftool) |
-| **SIFT Container (Raw/EWF)** | `/mnt/ewf/<case_name>/<image>/ewf1` | Sleuthkit tools (fls, icat, mmls) |
-| **Scratch (Shared)**| `/scratch/` | Bidirectional data exchange |
-| **Project Root** | `/case/` | Read-only access to case docs/logs |
+| **Local Host** | `cases/<case_name>/images/` | Source Disk/Memory images |
+| **SIFT Container (Filesystem)** | `/mnt/cases/<case_name>/<image_name>/` | Direct file access to the mounted partition (e.g. `/mnt/cases/VANKO/surface_physical.E01/`) |
+| **SIFT Container (Raw/EWF)** | `/mnt/ewf/<case_name>/<image_name>/ewf1` | Sleuthkit raw tools (fls, icat, mmls) |
+| **Scratch (Shared)**| `/scratch/` | **Read-Write** bidirectional data exchange and tool output staging |
+| **Project Root** | `/case/` | **Read-Only** access to case docs/logs |
 
 - **Common Tool Locations**:
     - **Sleuthkit**: `/usr/bin/` (`fls`, `icat`, `mmls`)
@@ -28,9 +28,19 @@ This skill provides guidance and command templates for using the SIFT (SANS Inve
     - **Memory**: `/opt/ai-tools/bin/vol` (Volatility 3)
 
 - **Local Mapping Details**:
-    - `./cases/<case_name>/` (Case current working directory) -> `/case` (Read-Only in the container, write in the local host)
-    - `./cases/<case_name>/scratch` (Case scratch directory) -> `/scratch` (Read-Write in both environments)
-    - `./cases/<case_name>/images` (Case images directory) -> `/case/images` (Read-Only in the container, write in the local host)
+    - `./cases/<case_name>/` (Case current working directory) -> `/case` (**Read-Only** in the container, write in the local host)
+    - `./cases/<case_name>/scratch` (Case scratch directory) -> `/scratch` (**Read-Write** in both environments)
+    - `./cases/<case_name>/images` (Case images directory) -> `/case/images` (**Read-Only** in the container, write in the local host)
+
+### 🚨 CRITICAL PATH MAPPING CAUTION (DO NOT MIX THESE UP!)
+Forensic investigators and subagents often confuse container paths, leading to execution failures. Ensure you strictly distinguish between these two environments inside the SIFT container:
+1. **The Mounted Evidence Filesystem**: `/mnt/cases/<case_name>/<image_name>/`
+   * *Example*: `/mnt/cases/NISTDL/surface_physical.E01/`
+   * *Purpose*: This is the read-only, mounted filesystem of the target machine itself. You can navigate it directly using standard tools (e.g. `ls`, `cp`, `cat`) without Sleuthkit.
+   * *Common Mistake*: Do **NOT** append `/scratch` to this path (e.g., `/mnt/cases/NISTDL/scratch/...` is **INVALID** and does not exist).
+2. **The Host Scratch Directory**: `/scratch/`
+   * *Example*: `/scratch/surface_physical.E01/parquet/`
+   * *Purpose*: This is the **Read-Write** shared space between your local machine and the SIFT container. Staged outputs, extracted databases, and parsed logs **MUST** be written here so they persist on the host. Do **NOT** use `/case/scratch/` inside the container because `/case` is mounted Read-Only, and writes to `/case/scratch/` will fail.
 
 ## ⚡ Efficiency & Budgeting
 To stay within tool call budgets and minimize token waste:

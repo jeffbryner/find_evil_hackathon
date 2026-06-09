@@ -14,13 +14,13 @@ docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "find /mnt
 ### 2. The "Extract & Verify" Chain
 Extract a file from an image and perform initial analysis.
 ```bash
-docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "mkdir -p /scratch/<CASE_NAME> && cp /mnt/cases/<IMAGE>/path/to/file /scratch/<CASE_NAME>/ && cd /scratch/<CASE_NAME> && md5sum file && strings file | grep -i 'keyword'"
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "cp /mnt/cases/<CASEID>/<IMAGE>/path/to/file /scratch/ && cd /scratch/ && md5sum file && strings file | grep -i 'keyword'"
 ```
 
 ### 3. The "Multi-Path Orientation" Chain
 Check multiple potential locations for a file to avoid trial-and-error.
 ```bash
-docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "ls -l /mnt/cases/<IMAGE>/Path1/file /mnt/cases/<IMAGE>/Path2/file 2>/dev/null"
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) bash -c "ls -l /mnt/cases/<CASEID>/<IMAGE>/Path1/file /mnt/cases/<CASEID>/<IMAGE>/Path2/file 2>/dev/null"
 ```
 
 ## ⚠️ Anti-Patterns (Avoid These)
@@ -41,7 +41,7 @@ docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) md5sum /mnt/cases/
 ## 2. Registry Analysis
 ### Dump hive contents (regfexport)
 ```bash
-docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) regfexport /mnt/<CASEID>/<IMAGENAME>/Windows/System32/config/SOFTWARE
+docker exec $(cat cases/<CASE_NAME>/scratch/container_id.txt) target-reg -k "HKEY_LOCAL_MACHINE\\Software\\" -d 1 -q /case/images/<IMAGENAME>
 ```
 
 ### Search for a key in a hive

@@ -62,7 +62,7 @@ uv run target-query <forensic_disk_image_filename> -f <plugin> -qs
 ### 3. target-reg
 Query registry hives or keys directly.
 ```shell
-uv run target-reg cases/<CASEID>/images/<DRIVE_IMAGE_FILENAME> -k "HKEY_LOCAL_MACHINE\\Software\\" -d 2 -q
+uv run target-reg cases/<CASEID>/images/<DRIVE_IMAGE_FILENAME> -k "HKEY_LOCAL_MACHINE\\Software\\" -d 1 -q
 ```
 - `-k`: Registry key name (escape backslashes).
 - `-d`: Depth level of traversal.
