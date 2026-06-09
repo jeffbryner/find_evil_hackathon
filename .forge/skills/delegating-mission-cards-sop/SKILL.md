@@ -7,6 +7,11 @@ description: Standard operating procedure delegating missions to subagents. Alwa
 ## Overview
 To standardize the way tasks are delegated and executed across multiple agents, follow this standard operating procedure to coordinate tasks through mission cards.
 
+### ⚠️ CRITICAL DISTINCTION: Evidence vs. Action
+To maintain strict forensic standards, agents must separate "What the Suspect Did" from "What the Investigator Did":
+*   **The Mission Card & Shared Facts (`.md`):** This is the **Evidence Report**. It documents Vanko's activities, timelines, threat actors, and motives. Do NOT put detailed tool execution history or raw SQL query strings here.
+*   **The Audit Trail (`-audit.md`):** This is the **Investigator Log**. It documents your exact technical actions, exact SQL queries, shell commands, tool parameters, and execution outcomes. Do NOT write a high-level summary of the case evidence here.
+
 ## When to use
 All agents **MUST** use this skill to properly delegate and execute tasks while setting appropriate context and returning meaningful results.
 - When delegating a task
@@ -57,6 +62,7 @@ You **MUST** use the following exact Markdown template when creating the file:
 - [ ] Task 1
 - [ ] Task 2
 - [ ] Update this mission card with results
+- [ ] Write a chronological technical log of 100% of executed queries and commands to the `-audit.md` file (verifying that the count matches the final Budget Tally)
 
 ## Results & Post-Mortem
 *(To be filled out by the Target Agent)*
@@ -72,6 +78,10 @@ When tasking sub agents with a delegated task:
 1. Use Explicit I/O Instructions in the task Prompt: Instead of just handing them a file path, put the exact output requirements directly into the tool invocation.
   **Example**: "Your mission is at /path/to/.../mission.md. You MUST use the patch tool to append your final report when you are done to conserve tokens. Do not just return it in the chat."
 2. Reinforce the strict Tool Call Budgets & Fail-Fast: To stop them from endlessly querying, enforce "Effort-Boxing" directly in the task description using tool call limits and explicit fail-fast conditions.
+3. **Validate Container Paths**: Ensure that any paths provided in the mission card match the actual mapping of the SIFT container. Specifically:
+   * Use `/mnt/cases/<case_name>/<image_name>/` for the read-only mounted filesystem (e.g. `/mnt/cases/VANKO/surface_physical.E01/`).
+   * Use `/scratch/` for the read-write scratch space (e.g. `/scratch/surface_physical.E01/extracted_comms/`). Do **NOT** use `/case/scratch/` inside the container as `/case` is mounted Read-Only.
+   * **NEVER** write invalid hybrid paths like `/mnt/cases/<case_name>/scratch/` as they do not exist and will cause execution failures.
 
 ## Instructions for the Target Agent:
 ### Orientation
@@ -109,7 +119,12 @@ To ensure transparency, reproducibility, and a clear chain of custody, you **MUS
 
 #### Examples:
 
-**CORRECT AUDIT LOGGING:**
+**CORRECT AUDIT LOGGING (DATABASE QUERY):**
+- **Tool Call #14:** Executed SQLite query on `skype_main.db`: 
+  `SELECT id, datetime(timestamp, 'unixepoch') FROM Messages WHERE body_xml LIKE '%classified%'`
+  -> *Outcome: Identified 12 messages containing target keywords; logged findings to timeline.*
+
+**CORRECT AUDIT LOGGING (SHELL COMMAND):**
 - **Tool Call #20:** `shell` with `{"command": "uv run helpers/query_parquet.py --case CASEID --query \"SELECT count(*) FROM artifacts_timeline WHERE timestamp >= '2016-06-20 00:00:00+00' AND timestamp <= '2016-06-25 23:59:59+00'\""}` -> *Outcome: Counted 11,829 artifacts_timeline entries in the target date range.*
 
 **INCORRECT AUDIT LOGGING:**
