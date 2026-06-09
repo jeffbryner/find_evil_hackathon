@@ -1,6 +1,6 @@
 ---
 name: forensic-querying
-description: This skill provides the technical documentation and SQL recipes for analyzing forensic artifacts using the DuckDB/Parquet pipeline via the `query_parquet.py` utility. Use this if asked to analyze forensic data, parquet files, or to perform SQL queries on forensic information.
+description: This skill provides the technical documentation and SQL recipes for analyzing forensic artifacts using the DuckDB/Parquet pipeline via the `query_parquet.py` utility. Use this if asked to analyze forensic data, parquet files, or to perform SQL queries on forensic information including SQLite databases.
 ---
 # Forensic Querying & Data Analysis
 
@@ -88,6 +88,14 @@ JOIN iocs i ON f.message ILIKE '%' || i.value || '%';
 
 DuckDB has a built-in `sqlite_scan` function that allows querying SQLite database files directly without any conversion. This is extremely powerful for analyzing communication databases (like Skype `main.db`), browser databases, or other application SQLite files:
 
+### ⚠️ MANDATORY INTEGRATION RULE: SQLite Scanning over Standalone CLI
+Whenever analyzing SQLite databases (such as communication logs, or mail databases), **ALWAYS prefer using DuckDB's native SQLite scanning capabilities** (via the `sqlite` extension or `sqlite_scan`) over standalone SQLite command-line utilities.
+
+**Why?**
+1. **Timeline Synchronization:** It allows you to immediately correlate application-specific SQLite records (like chat messages or web visits) with system-wide timelines (`fs_timeline`, `artifacts_timeline`) in a single query.
+2. **Unified Filtering:** You can apply case-insensitive `ILIKE` filters and regex extractions across both SQLite tables and Parquet files simultaneously.
+3. **No Conversion Overhead:** You query the raw SQLite file in-place without needing to export or convert the data.
+
 ### Basic Syntax
 ```sql
 SELECT * FROM sqlite_scan('path/to/database.db', 'table_name');
@@ -101,6 +109,26 @@ FROM fs_timeline f
 JOIN sqlite_scan('cases/<CASEID>/scratch/skype/main.db', 'Messages') s 
   ON f.timestamp = epoch_to_timestamp(s.timestamp)
 WHERE s.body_xml ILIKE '%secret%';
+```
+
+### Time-Window Correlation Query Example
+Correlating a Skype message with a filesystem file creation within a 60-second window is extremely useful for proving exfiltration or malware execution timelines:
+```sql
+SELECT 
+  f.timestamp AS file_event_time, 
+  f.message AS file_action,
+  s.message_time, 
+  s.author, 
+  s.body_xml 
+FROM fs_timeline f
+JOIN (
+  SELECT 
+    epoch_to_timestamp(timestamp) AS message_time, 
+    author, 
+    body_xml 
+  FROM sqlite_scan('cases/<CASEID>/scratch/skype/main.db', 'Messages')
+) s ON abs(epoch(f.timestamp) - epoch(s.message_time)) <= 60
+WHERE f.file_name_lower ILIKE '%zip%' OR f.file_name_lower ILIKE '%exe%';
 ```
 
 
@@ -146,6 +174,7 @@ Refer to the [Query Cookbook](references/recipes.md) for pre-written SQL snippet
 - **Filter**: Use SQL to narrow down to a specific time window or artifact type (e.g., `WHERE parser ILIKE '%Registry%'`).
 - **Mandatory Case-Insensitive Queries (ILIKE)**: ALWAYS use `ILIKE` instead of `LIKE` when searching for file paths, names, extensions, registry keys, URLs, or other text strings to prevent missing critical evidence due to case mismatch. NEVER use `lower(field) LIKE '%value%'` as it is inefficient, verbose, and unnecessary in DuckDB.
 - **Correlate**: JOIN `fs_timeline` and `artifacts_timeline` on `timestamp` to see what the system was doing when a specific file was created.
+- **Treat Raw SQLite as Tables**: Do not isolate SQLite databases. Use `sqlite_scan('path/to/db', 'table')` directly in your DuckDB queries to keep your investigation unified and synchronize chat/browser databases with system timelines.
 - **Unified View**: Using `--evidence all` (or omitting `--evidence`) will include all evidence from all hosts. This coupled with targeted queries for filenames, or other features will show you correlated entries across all hosts in question. 
 - **Forbid Inline Scripting for Output Parsing**: NEVER use inline Python (`python3 -c "..."`) and Regex to scrape or parse truncated terminal output. If a query returns long strings (like Base64 PowerShell commands or JSON blobs) that get truncated, you MUST use structured output formats (like JSONL) or DuckDB's native export functions to save the full results to a file in the `scratch/` directory for analysis.
 - **Maximize Native SQL**: Leverage DuckDB's native string manipulation, regex extraction (`regexp_extract`), and decoding functions (`from_base64`) directly within your SQL queries to process data efficiently, rather than pulling raw data into Python for processing.
