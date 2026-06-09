@@ -8,8 +8,8 @@ reasoning:
   exclude: false  
 provider: vertex_ai
 model: gemini-3.5-flash
-max_turns: 50 
-max_requests_per_turn: 50
+max_turns: 75 
+max_requests_per_turn: 75
 tool_supported: true
 tools: 
   - followup
