@@ -22,9 +22,6 @@ tools:
   - data-analyst
   - sniper-forensics
   - mcp_filesystem*
-skills:
-  - shared-facts-sop
-  - delegating-mission-cards-sop
 user_prompt: |-
   <{{event.name}}>{{event.value}}</{{event.name}}>
   <system_date>{{current_date}}</system_date>  

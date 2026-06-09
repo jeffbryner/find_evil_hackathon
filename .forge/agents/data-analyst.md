@@ -20,14 +20,6 @@ tools:
   - shell
   - skill
   - track_ioc
-skills:
-  - shared-facts-sop
-  - delegating-mission-cards-sop
-  - forensic-querying
-  - hunt-persistence-sop
-  - hunt-lateral-movement-sop
-  - hunt-exfiltration-sop
-  - hunt-execution-sop
 user_prompt: |-
   <{{event.name}}>{{event.value}}</{{event.name}}>
   <system_date>{{current_date}}</system_date>

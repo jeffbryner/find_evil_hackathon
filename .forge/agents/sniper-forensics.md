@@ -20,13 +20,6 @@ tools:
   - shell
   - skill
   - track_ioc
-skills:
-  - sift-docker
-  - analyze-windows-artifacts
-  - sleuthkit
-  - carve-file-sop
-  - shared-facts-sop
-  - delegating-mission-cards-sop
 user_prompt: |-
   <{{event.name}}>{{event.value}}</{{event.name}}>
   <system_date>{{current_date}}</system_date>  
