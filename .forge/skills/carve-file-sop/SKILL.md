@@ -9,6 +9,7 @@ This skill provides a Standard Operating Procedure (SOP) for the `sniper-forensi
 
 ## Trigger
 Use this skill when the Case Lead delegates a task to "Execute the carve-file-sop skill" to recover a specific file from a disk image.
+Note that this skill is intended for cases where the file name is known but the file has been deleted or renamed, making it unsearchable by name. If the file is still present and searchable by name, you can simply copy it from the mounted image directory without carving.
 
 ## Execution Steps
 
