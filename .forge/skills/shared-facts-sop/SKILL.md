@@ -21,6 +21,7 @@ All agents MUST use this skill to centralize case knowleged and shared memory as
       * # Suspicious Files & Staging Directories
       * # Decoded Payloads & Scripts
       * # Confirmed Exfiltrated/Accessed Data
+      * # Pending Investigative Leads
       * # Known Forensic Artifacts (IGNORE)
 2. Ingest Context: Before running any forensic tools or SQL queries, read shared_facts.md. Use the IPs, file paths, and accounts listed there to filter your initial searches and avoid re-analyzing known artifacts. Also, review the `known_good_tools.md` reference to ensure you do not flag legitimate investigator tools (like F-Response) as malicious.
 3. Execute Task: Perform your assigned forensic analysis or SQL queries.
@@ -48,6 +49,9 @@ This section contains any decoded payloads or scripts that have been discovered.
 
 ### Confirmed Exfiltrated/Accessed Data
 This section lists all data that has been confirmed as exfiltrated or accessed.
+
+### Pending Investigative Leads
+This section tracks newly discovered accounts, files, IPs, or indicators of interest that were logged by sub-agents under "Discovered Leads (For Followup)" but have not yet been assigned to a dedicated mission. The Case Lead must proactively harvest leads from completed mission cards, record them here, and spawn new targeted missions to clear them.
 
 ### Known Forensic Artifacts (IGNORE)
 This section is for tracking known forensic artifacts that should be ignored.

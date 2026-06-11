@@ -30,7 +30,9 @@ All agents **MUST** use this skill to properly delegate and execute tasks while 
     2. *Stage 2: Ingestion & Parsing Mission (sniper-forensics/data-analyst):* Run parsing tools (e.g., `pffexport`, `parse_emails.py`) to convert raw files into structured queryable tables (e.g., Parquet).
     3. *Stage 3: Analysis & Hunting Mission (data-analyst):* Execute SQL queries and search the tables for keywords, timelines, and motives.
   - Orientation and reporting budgets should be between 5-10 tool calls.
-  - **The Living Mission Card Rule:** Target agents MUST update the mission card and audit trail file on disk every 5–10 tool calls to checkpoint progress and prevent state loss.
+  - **The Living Mission Card Rule (Step-by-Step Checkpointing):** Target agents **MUST** use the `patch` or `write` tool to update the mission card and audit trail file on disk immediately after completing *each individual item* on the task checklist, or every 5 tool calls. Never proceed to a new task without saving progress of the previous one.
+  - **The "Two-Strike" Fail-Fast Rule:** If any forensic command, query, or script fails **twice** in a row due to errors (syntax, pathing, database locks), the target agent **MUST** immediately cease active forensics, document the error in the mission card, set its status to `[partially_completed]`, and exit cleanly. Do not attempt to dynamically debug beyond two attempts.
+  - **The "Record and Defer" Rule for Scope Creep:** If a target agent discovers a new, highly interesting lead, account, indicator, or artifact that is *outside* the direct scope of its current mission checklist, it **MUST NOT** pursue it immediately. Instead, the agent must document the lead in the "Discovered Leads (For Followup)" section of the mission card and continue executing its assigned checklist. This prevents budget exhaustion from chasing rabbit holes.
   - **No Relaunching Failed Missions:** If a mission is interrupted or self-terminates, it must be recorded as `[partially_completed]` with its partial audit log saved. To continue, the Case Lead MUST create a *new* mission card (e.g., `009-mission-...`) referencing the previous one, ensuring a complete forensic trail of the investigation.
 
 ## Instructions for the Delegating Agent:
@@ -71,6 +73,11 @@ You **MUST** use the following exact Markdown template when creating the file:
 - **Confidence Rating:**
 - **Budget Tally:**
 - **NPS / Feedback:**
+
+## Discovered Leads (For Followup)
+*(Document any new accounts, IPs, files, or indicators found during this mission that are outside the current scope. Do NOT pursue them during this mission.)*
+- **Lead 1:** [Details]
+- **Lead 2:** [Details]
 ```
 
 ### Delegation Conversation
@@ -92,7 +99,8 @@ When tasking sub agents with a delegated task:
 - If you cannot achieve the goals within the budget, report back with a status update and records your attempts in the mission card. It is ok to not complete the entire mission, but you must report your progress, any issues encountered and a note about exhausting the budget.
 
 ### Living Mission Card & State Checkpointing
-- **MANDATORY CHECKPOINTING:** To prevent token or request limit exhaustion from erasing all progress, you MUST use the `patch` tool to update your current progress back to the mission card and the `-audit.md` file on disk after every major milestone or every 5–10 tool calls.
+- **MANDATORY CHECKPOINTING:** To prevent token or request limit exhaustion from erasing all progress, you MUST use the `patch` tool to update your current progress back to the mission card and the `-audit.md` file on disk immediately after completing *each individual item* on the task checklist, or every 5 tool calls. Never proceed to a new task without saving progress of the previous one.
+- **THE TWO-STRIKE FAIL-FAST RULE:** If any forensic command, query, or script fails **twice** in a row due to errors (syntax, pathing, database locks), you **MUST** immediately cease active forensics, document the error in the mission card, set its status to `[partially_completed]`, and exit cleanly. Do not attempt to dynamically debug beyond two attempts.
 - **PROACTIVE SELF-TERMINATION:** Track your tool call count. If you reach 40 tool calls (or 80% of your total budget), immediately cease active forensic work. Use your remaining tool calls to perform a final update to the mission card on disk, set its status to `[partially_completed]`, detail what has been done and what remains, write your audit log, and exit cleanly. Do not run until a platform abort occurs as your work will be lost.
 
 ### Completing the Mission
