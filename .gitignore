@@ -1,0 +1,6 @@
+__pycache__
+.venv
+plans
+cases/
+recordings/
+.DS_Store

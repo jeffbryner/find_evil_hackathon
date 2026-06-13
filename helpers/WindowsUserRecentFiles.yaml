@@ -1,0 +1,12 @@
+# Custom artifact for Windows user recent files, including jump lists and MRU lists.
+---
+name: WindowsUserRecentFiles
+doc: Windows user specific recent files.
+sources:
+- type: FILE
+  attributes:
+    paths:
+    - '%%users.appdata%%\Microsoft\Office\Recent\*'
+    - '%%users.appdata%%\Microsoft\Windows\Recent\*'
+    separator: '\'
+supported_os: [Windows]
