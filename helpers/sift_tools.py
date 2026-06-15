@@ -44,7 +44,7 @@ def get_docker_socket():
 
 
 class SIFTOrchestrator:
-    def __init__(self, image_name="sift-ai:latest", case_name=None):
+    def __init__(self, image_name="0x7eff/sift-ai:latest", case_name=None):
         # Use dynamic socket discovery
         self.client = docker.DockerClient(base_url=get_docker_socket())
         self.image_name = image_name

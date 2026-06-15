@@ -1,14 +1,16 @@
 [project]
-name = "find-evil-hackathon"
+name = "DuckTracy"
 version = "0.1.0"
-description = "Add your description here"
+description = "Forensic analysis harness for AI to use SIFT, DuckDB and Docker to autonomously analyze forensic cases."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "dissect>=3.22",
     "docker>=7.1.0",
     "duckdb>=1.5.2",
     "mcp[cli]>=1.27.1",
     "pandas>=3.0.2",
     "pyarrow>=23.0.1",
     "scapy>=2.7.0",
+    "volatility3>=2.28.0",
 ]

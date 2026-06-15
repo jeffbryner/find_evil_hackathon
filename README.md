@@ -114,15 +114,27 @@ The dissect set of utilities https://docs.dissect.tools/en/latest/index.html are
 ### DuckDB
 AI is notoriously bad at navigating large context like we experience in forensics, but notoriously good at data science especially with SQL. 
 
-We purposefully build a pipeline for artifacts to go from raw form to .parquet files with a structured schema, presented as a query utility for AI. This allows extremely rapid and repeatable discovery, analysis by AI in an environment it knows well. DuckDB is local only, no servers needed and is capable of dynamically stitching together .parquet (and other) files which gives us an adhoc environment we can add data as needed.
+We purposefully build a pipeline for artifacts to go from raw form to .parquet files with a semi-structured schema, presented as a query utility for AI. This allows extremely rapid and repeatable discovery and analysis by AI in an environment it knows well. DuckDB is local only, no servers needed and is capable of dynamically stitching together .parquet, .sqlite, .jsonl and other files which gives us an adhoc environment we can add data as needed.
 
 ## Getting started. 
 
 - Clone this repo
+- Pull the docker container `docker pull 0x7eff/sift-ai`
 - Install `uv` for the python environment [DOCS](https://docs.astral.sh/uv/getting-started/installation/)
-- Install the libraries (uv pip install -r requirements.txt)
-- `source .venv/bin/activate` to activate the python environment
-- Install forge, login with your AI provider and choose your models.
+- Install the libraries `uv sync`
+- Optional: `source .venv/bin/activate` to activate the python environment, or run utilities with `uv run <something.py>`.
+- Install forge, login with your AI provider and choose your models. 
+  ```
+  curl -fsSL https://forgecode.dev/cli | sh
+  forge
+  /login
+  ```
+  NOTE that the current configuration assumes Google Gemini via VertexAI. You can use any provider/model, but you will need to edit the ./.forge/agents/*.md files to match your intentions
+  ```
+  provider: vertex_ai
+  model: gemini-3.5-flash
+  ```
+
 - Create a directory to hold your case images: `mkdir -p ./cases/<CASE_ID>/images`
 - Copy in your disk/memory images (by convention `<hostname-disc|memory>.<filetype>` ) 
     - Where filetype is .E01 for expert witness files, .img for memory images. 
