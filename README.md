@@ -121,9 +121,20 @@ We purposefully build a pipeline for artifacts to go from raw form to .parquet f
 - Clone this repo
 - Pull the docker container `docker pull 0x7eff/sift-ai`
 - Install `uv` for the python environment [DOCS](https://docs.astral.sh/uv/getting-started/installation/)
-- Install the libraries (uv pip install -r requirements.txt)
-- `source .venv/bin/activate` to activate the python environment
-- Install forge, login with your AI provider and choose your models.
+- Install the libraries `uv sync`
+- Optional: `source .venv/bin/activate` to activate the python environment, or run utilities with `uv run <something.py>`.
+- Install forge, login with your AI provider and choose your models. 
+  ```
+  curl -fsSL https://forgecode.dev/cli | sh
+  forge
+  /login
+  ```
+  NOTE that the current configuration assumes Google Gemini via VertexAI. You can use any provider/model, but you will need to edit the ./.forge/agents/*.md files to match your intentions
+  ```
+  provider: vertex_ai
+  model: gemini-3.5-flash
+  ```
+
 - Create a directory to hold your case images: `mkdir -p ./cases/<CASE_ID>/images`
 - Copy in your disk/memory images (by convention `<hostname-disc|memory>.<filetype>` ) 
     - Where filetype is .E01 for expert witness files, .img for memory images. 
