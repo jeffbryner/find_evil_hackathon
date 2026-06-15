@@ -117,6 +117,7 @@ Complete the mission according to the instructions in the card and add a results
 ### Mandatory Forensic Audit Trail
 To ensure transparency, reproducibility, and a clear chain of custody, you **MUST** automatically write a detailed forensic audit trail of your entire execution history to a separate file.
 - **File Name Format:** Exactly the same name as the mission card you are updating, but with `-audit.md` instead of `.md` (e.g., if the card is `001-mission-data-analyst-inventory-and-triage.md`, the audit file MUST be `001-mission-data-analyst-inventory-and-triage-audit.md` in the same directory).
+- **⚠️ Recursive Audit Exclusion Rule:** To prevent an infinite loop where the act of writing the audit file is itself a tool call that must be logged, **the final tool calls used to write the `.md` results and the `-audit.md` file are strictly EXCLUDED from both the Budget Tally and the Chronological Tool Execution Log.** The budget tally and execution log are closed and finalized *prior* to writing the final reporting files.
 - **Contents Required:**
   - The exact initial prompt/mission parameters received.
   - A chronological log of every tool call executed, including the exact, complete arguments passed (with NO truncation, NO ellipses `...`, and NO placeholder summaries) and an extremely brief summary of the raw output received. (Useful, not useful, smoking gun, etc.)
