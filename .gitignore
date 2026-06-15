@@ -1,6 +1,7 @@
 __pycache__
 .venv
 plans
-cases/
+cases/*
+!cases/.gitkeep
 recordings/
 .DS_Store
