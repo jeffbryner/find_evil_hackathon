@@ -2,13 +2,12 @@ __pycache__
 .venv
 plans
 publish_case_branches.py
-# Case data: NITROBA (the demo case) is tracked on main.
-# Other cases live on their own branches via publish_case_branches.py.
+# Case data: only NISTDL is tracked on this branch.
 cases/*
 !cases/.gitkeep
-!cases/NITROBA/
-cases/NITROBA/images/
-cases/NITROBA/scratch/*
-!cases/NITROBA/scratch/iocs.jsonl
+!cases/NISTDL/
+cases/NISTDL/images/
+cases/NISTDL/scratch/*
+!cases/NISTDL/scratch/iocs.jsonl
 recordings/
 .DS_Store
