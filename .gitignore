@@ -1,7 +1,13 @@
 __pycache__
 .venv
 plans
+# Case data: NITROBA (the demo case) is tracked on main.
+# Other cases live on their own branches via publish_case_branches.py.
 cases/*
 !cases/.gitkeep
+!cases/NITROBA/
+cases/NITROBA/images/
+cases/NITROBA/scratch/*
+!cases/NITROBA/scratch/iocs.jsonl
 recordings/
 .DS_Store
