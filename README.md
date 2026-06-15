@@ -114,7 +114,7 @@ The dissect set of utilities https://docs.dissect.tools/en/latest/index.html are
 ### DuckDB
 AI is notoriously bad at navigating large context like we experience in forensics, but notoriously good at data science especially with SQL. 
 
-We purposefully build a pipeline for artifacts to go from raw form to .parquet files with a structured schema, presented as a query utility for AI. This allows extremely rapid and repeatable discovery, analysis by AI in an environment it knows well. DuckDB is local only, no servers needed and is capable of dynamically stitching together .parquet (and other) files which gives us an adhoc environment we can add data as needed.
+We purposefully build a pipeline for artifacts to go from raw form to .parquet files with a semi-structured schema, presented as a query utility for AI. This allows extremely rapid and repeatable discovery and analysis by AI in an environment it knows well. DuckDB is local only, no servers needed and is capable of dynamically stitching together .parquet, .sqlite, .jsonl and other files which gives us an adhoc environment we can add data as needed.
 
 ## Getting started. 
 
