@@ -119,6 +119,7 @@ We purposefully build a pipeline for artifacts to go from raw form to .parquet f
 ## Getting started. 
 
 - Clone this repo
+- Pull the docker container `docker pull 0x7eff/sift-ai`
 - Install `uv` for the python environment [DOCS](https://docs.astral.sh/uv/getting-started/installation/)
 - Install the libraries (uv pip install -r requirements.txt)
 - `source .venv/bin/activate` to activate the python environment
