@@ -34,6 +34,7 @@ flowchart TB
     end
 
     HELP["query_parquet.py · ioc_tracker.py<br/>(agent-facing CLIs)"]
+    MCPFS["mcp_filesystem.py<br/>MCP server · <b>Case Lead only</b><br/>binary-aware file listing"]
 
     subgraph BB["📋 Shared Brain (Blackboard) — files on disk"]
       direction LR
@@ -44,6 +45,7 @@ flowchart TB
     end
   end
   class HOST,AG,LEAD arch
+  class MCPFS arch
   class BB,CR,SH,IOC,MC prompt
 
   subgraph DATA["🗄️  DuckDB / Parquet  —  in-process · no server · native arm64"]
@@ -77,6 +79,7 @@ flowchart TB
   SF -- "docker exec" --> SIFT
 
   LEAD -- "patch/write" --> CR
+  LEAD -- "list_directory · read" --> MCPFS
   DA -- "track_ioc" --> IOC
   SF -- "track_ioc" --> IOC
   DA -- "updates" --> SH
@@ -88,7 +91,7 @@ flowchart TB
   MEM  -. "RO read" .-> TRIAGE
 ```
 
-DuckTracy runs **on the host directly** — not inside a SIFT VM. Docker is used only for the subset of SIFT tools that need Linux/amd64; DuckDB queries Parquet in-process for speed; agents query through familiar SQL and shell instead of a custom MCP surface. See [ARCHITECTURE.md](./ARCHITECTURE.md) for trust boundaries, the architectural pattern, and why this diverges from the default SIFT VM setup.
+DuckTracy runs **on the host directly** — not inside a SIFT VM. Docker is used only for the subset of SIFT tools that need Linux/amd64; DuckDB queries Parquet in-process for speed. The **Case Lead** uses a narrow custom MCP filesystem server (`helpers/mcp_filesystem.py`) so it can perceive binary evidence files that forge's default tools skip; sub-agents work through familiar SQL and shell rather than MCP. See [ARCHITECTURE.md](./ARCHITECTURE.md) for trust boundaries, the architectural pattern, and the design rationale.
 
 ## What
 DuckTracy (a nod to Daffy's character and our use of DuckDB) is a structured way to perform forensics using a discrete set of tooling: 
