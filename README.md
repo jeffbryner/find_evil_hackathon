@@ -1,5 +1,9 @@
 # DuckTracy: Forensics at machine speed
 
+[![DuckTracy demo](https://img.youtube.com/vi/0jk51RqOx_I/maxresdefault.jpg)](https://www.youtube.com/watch?v=0jk51RqOx_I)
+
+*5-minute walkthrough of the NITROBA case — chapters in the YouTube description.*
+
 ## Architecture (at a glance)
 
 ```mermaid
