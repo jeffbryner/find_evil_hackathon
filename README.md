@@ -1,4 +1,4 @@
-# AI Forensics
+# DuckTracy: Forensics at machine speed
 
 ## Architecture (at a glance)
 
@@ -91,10 +91,10 @@ flowchart TB
   MEM  -. "RO read" .-> TRIAGE
 ```
 
-DuckTracy runs **on the host directly** — not inside a SIFT VM. Docker is used only for the subset of SIFT tools that need Linux/amd64; DuckDB queries Parquet in-process for speed. The **Case Lead** uses a narrow custom MCP filesystem server (`helpers/mcp_filesystem.py`) so it can perceive binary evidence files that forge's default tools skip; sub-agents work through familiar SQL and shell rather than MCP. See [ARCHITECTURE.md](./ARCHITECTURE.md) for trust boundaries, the architectural pattern, and the design rationale.
+DuckTracy runs **on the host directly** — not inside a SIFT VM. Docker is used to access the wide variety of SIFT tools. DuckDB queries Parquet in-process for speed. The **Case Lead** uses a narrow custom MCP filesystem server (`helpers/mcp_filesystem.py`) so it can perceive binary evidence files that forge's default tools skip; sub-agents work through familiar SQL and shell rather than MCP. See [ARCHITECTURE.md](./ARCHITECTURE.md) for trust boundaries, the architectural pattern, and the design rationale.
 
 ## What
-DuckTracy (a nod to Daffy's character and our use of DuckDB) is a structured way to perform forensics using a discrete set of tooling: 
+DuckTracy (a nod to Daffy's iconic sleuth character and our use of DuckDB) is a structured way to perform forensics using a discrete set of tooling: 
 
 ### SIFT
 The SIFT workstation from SANS is a battle-tested collection of tried and true forensic utilities. We use it as a docker container to: 

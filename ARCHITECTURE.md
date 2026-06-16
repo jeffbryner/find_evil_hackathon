@@ -4,7 +4,7 @@
 - **Hackathon tracks:** spans #1 (Direct Agent Extension) and #3 (Multi-Agent Frameworks)
 - **Goals:** Speed plus AI creativity while enforcing forensic integrity
 
-> **Where this runs:** directly on the analyst's host — *not* inside the SIFT VM. Docker is used only for the subset of SIFT tools that need Linux/amd64. This deliberately combines the best of both worlds: SIFT's breadth of tools while taking advantage of native Apple Silicon performance, DuckDB's in-process query speed, and modern data-science formats (Parquet).
+> **Where this runs:** directly on the analyst's host — *not* inside the SIFT VM. Docker is used for access to the wide variety of SIFT tools. This deliberately combines the best of both worlds: SIFT's breadth of tools while taking advantage of native Apple Silicon performance, DuckDB's in-process query speed, and modern data-science formats (Parquet).
 
 ## Diagram
 
