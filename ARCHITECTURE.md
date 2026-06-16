@@ -117,13 +117,13 @@ The hackathon brief asks specifically that architectural enforcement and prompt-
 | Sub-agent scope discipline | 🟠 Prompt / SOP | Each sub-agent prompt: *"ONLY perform the requested analysis. Do NOT attempt to analyze the entire case or pivot to unrelated artifacts."* | If ignored, the agent burns its tool-call budget on tangents; the budget cap (architectural) is the backstop. |
 | In-container command execution | 🟠 Permission policy | `.forge/permissions.yaml` allows `command: "*"`. Agents can run any shell command inside the SIFT container. | The RO mount on `/case` is what actually protects evidence integrity, not the permission policy. Documented honestly here: the architectural protection lives at the mount layer, not the command-allowlist layer. |
 
-## Why this differs from the default SIFT VM setup
+## Why this architecture
 
-The hackathon's reference architecture assumes everything runs inside the SIFT VM. DuckTracy intentionally inverts this:
+The hackathon's reference architecture appears to assume everything runs inside the SIFT VM. DuckTracy intentionally inverts this:
 
 1. **Speed.** DuckDB in-process on Apple Silicon processes millions of forensic events in milliseconds. The same workload inside the SIFT VM is slower by an order of magnitude.
 2. **Data-science substrate.** Parquet + DuckDB lets AI agents query in SQL — a language they already know fluently — instead of learning a bespoke MCP tool surface.
 3. **Containment by isolation, not by VM.** Source images are protected by a read-only Docker mount, not by VM-level segregation. The Docker boundary is sufficient for evidence integrity and lighter than a full VM.
-4. **SIFT toolset preserved.** The SIFT container still provides Sleuthkit, Plaso, Dissect, target-query, etc. Agents reach them via `docker exec` and consistently rate the interaction as "feeling native."
+4. **SIFT toolset preserved.** The SIFT container still provides Sleuthkit, Plaso, but adds new utilities such as the Dissect series of target-query, etc. Agents reach them via `docker exec` and consistently rate the interaction as "feeling native."
 
-This architecture is the project's central design thesis. The agent's preference for SQL + native shell over MCP was validated through per-iteration agent NPS feedback (see the devpost submission).
+This architecture is the project's central design thesis. The agent's preference for SQL + native shell over MCP was validated through per-iteration agent NPS feedback.
