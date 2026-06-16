@@ -10,6 +10,8 @@ This skill provides a Standard Operating Procedure (SOP) for decrypting Windows 
 ## Trigger
 Use this skill when you identify DPAPI-protected databases (such as Google Chrome or Microsoft Edge `Login Data`), or when you need to dump SAM hashes, LSA secrets, or DPAPI master keys from an extracted Windows system.
 
+Use the `extract-triage-artifacts` skill for an easier path to common credentials like browser passwords.
+
 ## Core Concepts & Key Paths
 
 To decrypt a DPAPI-protected file (such as Chrome/Edge passwords), you must reconstruct the cryptographic chain:

@@ -1,6 +1,6 @@
 ---
 name: extract-triage-artifacts
-description: Extract forensic artifacts from disk images using the Dissect framework (target-query, target-reg). Use this skill when you need to quickly retrieve basic system information, registry keys, browser history, or other targeted OS artifacts and optionally convert them to Parquet format for SQL analysis.
+description: Extract forensic artifacts from disk images using the Dissect framework (target-query, target-reg). Use this skill when you need to quickly retrieve basic system information, registry keys, browser history, browser passwords, or other targeted OS artifacts and optionally convert them to Parquet format for SQL analysis.
 ---
 
 # Extract Triage Artifacts
