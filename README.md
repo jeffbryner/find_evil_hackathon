@@ -137,7 +137,7 @@ We purposefully build a pipeline for artifacts to go from raw form to .parquet f
 
 - Create a directory to hold your case images: `mkdir -p ./cases/<CASE_ID>/images`
 - Copy in your disk/memory images (by convention `<hostname-disc|memory>.<filetype>` ) 
-    - Where filetype is .E01 for expert witness files, .img for memory images. 
+    - Where filetype is .E01 for expert witness files, .img for memory images, .dd or .raw for raw images. 
     - Files without the word `memory` in the name will be considered disk images and mounted. 
     - Files with the word `memory` in the name will be processed as memory images. 
 - Initialize the case `uv run init_case.py --case <CASE_ID> ./cases/<CASE_ID>/images/*
@@ -180,4 +180,8 @@ forge
 
 Prompt with whatever you think it needed to start the case (at least the `CASEID`)
 
-You can monitor the case progress by watching the `docs` directory in the CASEID folder and by communicating with the lead agent for the forge CLI. You can interrupt the lead agent at any time with a CTRL-c.
+You can monitor the case progress by watching the `docs` directory in the CASEID folder and by communicating with the lead agent for the forge CLI. 
+
+You can interrupt the lead agent at any time with a CTRL-c. 
+
+You can always redirect the lead or subagents through the command line interface. They are autonomous by instinct, but appreciate redirection as needed for questions or insights you might have. 
