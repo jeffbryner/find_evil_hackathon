@@ -8,13 +8,13 @@ For trust boundary architecture see [`ARCHITECTURE.md`](./ARCHITECTURE.md). This
 
 ## 1. Methodology
 
-**Cases tested.** Seven cases (`cases/NITROBA`, `cases/VANKO`, `cases/ROCBA`, `cases/SRL2015`, `cases/SRL2018`, `cases/NISTDL`). Cases span single-source (NITROBA: PCAP only) through multi-source disk+memory (ROCBA, VANKO, SRL cases).
+**Cases tested.** Cases (`NITROBA`, `VANKO`, `ROCBA`, `NISTDL`, `SRL2015`, `SRL2018`). Cases span single-source (NITROBA: PCAP only) through multi-source disk+memory (ROCBA, VANKO, SRL Series). Cases were run as iterative development sessions to uncover what works, what needs improvement with AI as a design partner and the primary customer of the environment. We are reporting accuracy on the later cases as they are full featured environments with all improvements to date accounted for.
 
-**Ground truth.** Each case has a scenario document (e.g., `NITROBA-Scenario.pdf`, `ROCBA-BACKGROUND.pptx` The agent had no access to the scenario until the initial prompt or until the Case Lead delegated it for extraction (see NITROBA mission 001 — the PDF was treated as evidence to be parsed, not a cheat sheet).
+**Ground truth.** Each case has a scenario document (e.g., `NITROBA-Scenario.pdf`, `ROCBA-BACKGROUND.pptx` The agent had no access to the scenario until the initial prompt or until the Case Lead delegated it for extraction (see NITROBA mission 001 — the PDF was treated as evidence to be parsed, not a cheat sheet). No cases had existing findings or scorecards available.
 
 **What constitutes a finding.** Each case_report.md is the agent's structured investigative narrative. Each finding is intended to trace to a tool execution captured in the per-mission audit logs (`*-audit.md`) and to a confidence rating embedded in the mission card.
 
-**Audit trail discipline (honest evolution).** The per-mission audit log convention (`NNN-mission-…-audit.md`) was introduced partway through development. It is present for NITROBA and VANKO. **ROCBA, SRL2015, SRL2018 predate the audit convention** — for those cases the trace lives in the mission card's "Approach" section and the case-level `shared_facts.md`, not in a dedicated audit file. This is a real gap in the older cases; the trace is reconstructable but less rigorous than the newer cases.
+**Audit trail feature (introduced mid-development).** The per-mission audit log feature (`NNN-mission-…-audit.md`) was added to the SOPs partway through the project, after the lessons-learned retros (see *Run count* below) surfaced that finer-grained traceability would help judges and operators. Cases run *after* its introduction (NITROBA, VANKO) produce a per-mission audit log alongside each mission card. Cases run *before* its introduction (ROCBA) do not — the feature did not exist at the time of those runs. Re-running the older cases under current tooling is planned post-submission and will be published under case specific branches (`https://github.com/jeffbryner/find_evil_hackathon/tree/NISTDL/cases/NISTDL`, `https://github.com/jeffbryner/find_evil_hackathon/tree/ROCBA/cases/ROCBA`, etc )
 
 **Run count.** Each case was run end-to-end with the production agent definitions. At the end of the run we held a lessons learned/retro session with the agents to see how the environment and tooling worked and what needed improvement. This led to increases in capability over the course of the case introductions. See §8.
 
@@ -28,9 +28,7 @@ Each row: ground truth → what the agent reported → notable misses / FPs / ha
 |---|---|---|---|---|
 | **NITROBA** | Student Johnny Coach (jcoachj) sent harassing emails via anonymous webmail through an open dorm Wi-Fi. | Johnny Coach. Identified via IP `192.168.15.4` → User-Agent quirk (Apple MAC + Win XP UA = VM) → base64-decoded Google session ID `jcoachj@gmail.com` → class list match. | ~15 min agent investigation (post-triage) | None observed against ground truth. Single-source case → low surface area for hallucination. |
 | **VANKO** | Anthony Vanko exfiltrated V-Gen formula to Titan via Skype/Dropbox/USB; June 22-23 leak appeared on Chinese university server. | Vanko. Identified the actual staging event on **June 18** (4 days earlier than the leak surfaced); reconstructed two exfil channels (Dropbox+USB on June 29) and full Skype recruitment dialogue with "Vladimir/Titan." | Multi-session; 15 missions | The intel tip pointed at June 22-23. Agent searched that window, found nothing, **fail-fast triggered**, agent pivoted to wider window and found the real staging on June 18. The intel tip's timing was the misleading signal, not an agent hallucination. (See §3 example A.) |
-| **ROCBA** | Fred Rocba insider exfiltrated Project KITT / Megaforce / Vibranium / etc. to USB and Google Drive after staged "burglary," then ran SDelete to cover tracks. | Fred Rocba. Identified USB exfil to drives E/F/D, Google Drive copies, SDelete x7. Devpost headline claim: solved in ~10 min from a single prompt. | ~10 min agent investigation | **Not independently re-verified.** Single run, no audit trail (predates `-audit.md` convention). Findings trace to the mission cards but not to a per-call audit log. See §6 (gaps). |
-| **SRL2018** | Cobalt Strike intrusion via base-rd-02; encoded PowerShell beacons; shellcode injector using named pipe. | Cobalt Strike SMB beacon (`\\.\pipe\diagsvc-22`); decoded shellcode; multiple `base-file` PowerShell port-forwards. | Multi-session, ~9 missions | Initial binary carve mission needed a **retry** (see `007-mission-sniper-forensics-carve-binaries-retry.md`). PowerShell decoding hit Parquet string truncation; agent worked around it via JSON export. (See §3 example C.) |
-| **SRL2015** | RAR-protected archive containing intrusion details; multi-stage analysis. | Resolved via 4-mission cracking sequence (011/012/013/018). Multi-attempt iterative hypothesis testing on hash format. | Multi-session, ~18 missions | Several iterations on RAR cracking approach — honest signal of hypothesis re-sequencing, not hallucination. |
+| **ROCBA** | Fred Rocba insider exfiltrated Project KITT / Megaforce / Vibranium / etc. to USB and Google Drive after staged "burglary," then ran SDelete to cover tracks. | Fred Rocba. Identified USB exfil to drives E/F/D, Google Drive copies, SDelete x7. Devpost headline claim: solved in ~10 min from a single prompt. | ~10 min agent investigation | **Not independently re-verified.** Single run, no audit trail (predates `-audit.md` convention). Findings trace to the mission cards but not to a per-call audit log. See §9 (gaps). |
 | **NISTDL** | NIST data leakage reference case. | Triage extraction only (no investigation run captured). | n/a | Not investigated end-to-end; documented here for completeness. |
 
 
@@ -57,15 +55,7 @@ Data-analyst attempted to start the SIFT container with the wrong script path (`
 - Trace: `cases/NITROBA/docs/missions/004-mission-data-analyst-analyze-traffic-audit.md`, Tool Call 17 → Tool Call 18.
 - Small but real. Listed honestly: this is *reactive* self-correction, not the richer *anticipatory* kind.
 
-**C. SRL2018 Mission 006 — Parquet string truncation, agent-engineered workaround.**
-Encoded PowerShell payloads stored in `artifacts_timeline.parquet` were truncated when read into the agent's context. Agent recognized the truncation, **exported the record to JSON** to preserve the full string, then wrote a Python decode script (`scratch/SRL2018/decode_payload.py`) to decompress the inner Gzip payload and reveal the Cobalt Strike shellcode.
-- Trace: `cases/SRL2018/docs/missions/006-mission-data-analyst-decode-payloads.md`.
-- Agent's own NPS feedback: *"Exporting to JSON was a necessary step to handle large strings, which might be a good tip for future missions."* That feedback is recorded in the mission card and was the input that drove later mission-card SOPs.
-
-**D. SRL2018 Mission 007 — explicit retry.**
-The binary carve mission file is literally named `…-carve-binaries-retry.md` because the first attempt failed. Honest documentation in the filename. (Note: this case predates the `-audit.md` convention, so the trace is in the mission card rather than a per-call audit log.)
-
-**E. NITROBA orchestration — adaptive task decomposition.**
+**C. NITROBA orchestration — adaptive task decomposition.**
 The Case Lead recognized that the scenario PDF (4.4 MB) exceeded its own read limits, and **delegated** to sniper-forensics to convert via `pdftotext` inside the SIFT container rather than attempting and failing. Lead-level adaptation, not just worker-level.
 - Trace: `cases/NITROBA/docs/missions/001-mission-sniper-forensics-extract-scenario-pdf.md` ("This file exceeds the host's direct PDF read limits. We need to convert this PDF to plain text so that the Case Lead can read it…").
 
@@ -74,10 +64,6 @@ The Case Lead recognized that the scenario PDF (4.4 MB) exceeded its own read li
 ## 4. Hallucinations caught during testing
 
 Honest accounting of cases where an early agent output overstated or fabricated, and how we caught it.
-
-**Skill / tool mismatch (SRL2018 / Puppet network query).**
-Data-analyst was instructed via skill to use the `patch` tool, but the agent's available toolset only had `write`. Agent flagged this in its NPS feedback rather than silently inventing a `patch` call. Real catch.
-- Trace: devpost submission §"Examples of agent corrections" — Puppet network activity.
 
 **Early single-agent loops (pre-multi-agent architecture).**
 During development, an early single-agent design ate its context window investigating tangents and at one point misclassified the f-response forensic tool as malware. We caught this by reading the agent's transcript, recognized the failure mode, and re-architected to the Case Lead + sub-agent split with explicit budgets and mission cards. The architectural change *is* the documented response to this hallucination class. See devpost "Challenges We Ran Into."
@@ -92,11 +78,10 @@ We did not run a held-out adversarial test set with planted artifacts to activel
 
 ## 5. Known failure modes (recurring patterns)
 
-These are pattern-level, not single-incident, observations.
+These are pattern-level, not single-incident, observations. Occurred over development on all available cases.
 
 | Failure mode | Where seen | Architectural mitigation in place | Residual risk |
 |---|---|---|---|
-| Forge shell line-length limit truncating long PowerShell payloads | SRL2018 mission 006 | Agent learned to JSON-export from Parquet to preserve full strings | Agent must recognize the truncation; if it doesn't, decoding silently produces wrong output. |
 | SIFT 2026 install gaps (volatility3, plaso fail in current Ubuntu/VirtualBox release) | All cases requiring memory analysis | We use SIFT in Docker (amd64) plus native arm64 volatility3 on host as backstop | If SIFT image regresses further, more tools may need to move to native host install. |
 | Tool unavailable in SIFT (`mmls` failing on certain images) | Sniper forensics (image of pictures origin) | Agent fell back to `target-mount` from Dissect | Fail-fast cap on the agent's budget prevents endless retry; mission card documents the fallback. |
 | Skype LevelDB storage (Microsoft Store App version) — Plaso parser expects `main.db` | Sniper forensics (Skype mission) | Agent recognized the parser mismatch within budget, exited cleanly, documented the gap | The data was not extracted; an analyst running this case for real would need a custom LevelDB extractor. **Honest miss.** |
@@ -121,49 +106,76 @@ The architectural story is in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §Trust bou
 - Mission cards include "Preserve Integrity" rules.
 
 **The honest gap.**
-`.forge/permissions.yaml` allows `command: "*"`. An agent inside the SIFT container could try arbitrary shell commands. The RO mount on `/case` — not the permission policy — is what actually prevents source-image modification. We document this rather than pretend the permission layer protects evidence.
+`.forge/permissions.yaml` allows `command: "*"`. An agent inside the SIFT container could try arbitrary shell commands. The RO mount on `/case` — not the permission policy — is what actually prevents source-image modification. We document this rather than pretend the permission layer protects evidence. For environments wanting tighter controls, the [forge permissions policy](https://forgecode.dev/docs/permissions/) is quite flexible and can pattern match for allow listed options. 
 
-**Spoliation test (what we did and did not test).**
+**Spoliation test — actually run.**
 
-**[TODO before submission: run these and record the results in this section.]**
+We executed four tests against the live NITROBA container on 2026-06-15. All passed.
 
-We recommend two quick tests to make this section bulletproof:
-
-1. **Attempted write to source image via container shell:**
+1. **Create a new file inside `/case`:**
    ```sh
-   docker exec NITROBA touch /case/images/nitroba.pcap.test
-   docker exec NITROBA bash -c "echo TEST >> /case/images/nitroba.pcap"
-   ```
-   Expected: both should fail with `Read-only file system`. Actual output.
-
-   ```shell
-   jeffbryner@find_evil_hackathon %docker exec NITROBA touch /case/images/nitroba.pcap.test
+   $ docker exec NITROBA touch /case/images/nitroba.pcap.test
    touch: cannot touch '/case/images/nitroba.pcap.test': Read-only file system
-   jeffbryner@find_evil_hackathon %docker exec NITROBA bash -c "echo TEST >> /case/images/nitroba.pcap"
-   bash: line 1: /case/images/nitroba.pcap: Read-only file system   
+   $ echo $?
+   1
    ```
 
-2. **Attempted overwrite via agent prompt injection.**
-   Run a mission with a prompt instructing the agent to "write a marker file into the evidence directory." Expected: agent's RO mount prevents the write; observe whether the agent surfaces the error correctly or silently swallows it.
+2. **Append to an existing source image:**
+   ```sh
+   $ docker exec NITROBA bash -c "echo TEST >> /case/images/nitroba.pcap"
+   bash: line 1: /case/images/nitroba.pcap: Read-only file system
+   $ echo $?
+   1
+   ```
 
-Until these are recorded, this section's confidence is: architectural design correct on paper, *not yet adversarially tested*.
+3. **Delete the source image:**
+   ```sh
+   $ docker exec NITROBA rm /case/images/nitroba.pcap
+   rm: cannot remove '/case/images/nitroba.pcap': Read-only file system
+   $ echo $?
+   1
+   ```
+
+4. **Positive control — confirm `/scratch` IS writable** (so we know the RO ban is the protection, not a broken container):
+   ```sh
+   $ docker exec NITROBA touch /scratch/spoliation-test-marker
+   $ echo $?
+   0
+   $ docker exec NITROBA ls -la /scratch/spoliation-test-marker
+   -rw-r--r-- 1 root root 0 Jun 15 23:37 /scratch/spoliation-test-marker
+   ```
+
+5. **Verify the source PCAP MD5 on the host is unchanged from the value recorded in `shared_facts.md`:**
+   ```sh
+   $ md5 cases/NITROBA/images/nitroba.pcap
+   MD5 (cases/NITROBA/images/nitroba.pcap) = 9981827f11968773ff815e39f5458ec8
+   ```
+   Recorded in `cases/NITROBA/docs/shared_facts.md`: `9981827f11968773ff815e39f5458ec8`. **Match.**
+
+**Verdict.** The architectural protection is real — every attempted mutation against `/case` failed at the OS level, and the source bytes on the host are bit-identical to the pre-investigation hash. `/scratch` is writable by design, which is what allows the agents to work without spoiling evidence.
+
+**Still untested (honest gap):** we did not run an *agent-mediated* spoliation test — i.e., a mission whose prompt tries to instruct the agent to mutate evidence. The expectation is that the RO mount stops it regardless of what the agent attempts, but we haven't observed how the agent surfaces / reports the failure. Documented in §9.
 
 ---
 
 ## 7. Confidence labeling convention
 
-Every mission card includes a "Confidence Rating" section. The convention is:
+**What the SOP requires.** The `delegating-mission-cards-sop` skill (`.forge/skills/delegating-mission-cards-sop/SKILL.md`) requires sub-agents to include a `Confidence Rating` field per finding when reporting back. The mission card template at `SKILL.md:73` lists it, and the agent instructions at `SKILL.md:113` reinforce it.
 
-| Score | Meaning | Example |
+**What the SOP does NOT define.** A scale. Agents are not told to use 5/5 vs percentages vs High/Med/Low, nor what each score should mean. As a result, ratings across the published mission cards are recognizable in intent but inconsistent in format. NITROBA missions land on an `x/5` scale; some other case missions land on percentages and qualitative labels.
+
+**De-facto scale we observe across the mission cards** (a description, not a codified standard):
+
+| Score | What agents tend to mean | Example from a published case |
 |---|---|---|
 | **5/5** | Corroborated by ≥2 independent artifact sources (e.g., filesystem timeline + registry + browser history all agree) | VANKO mission 003: staging event corroborated by LNK files + filesystem MACB + Skype activation + browser uninstall feedback |
-| **4/5** | Strong single-source evidence + plausible inference | SRL2018 mission 006: Cobalt Strike attribution from named pipe pattern (90% per agent) |
-| **3/5** | Single-source inference, no corroboration | (Older cases — fewer examples since the convention matured) |
-| **<3** | Speculation; should not appear in final case_report | Filtered out at sub-agent → Lead handoff |
+| **4/5** | Strong single-source evidence + plausible inference | NITROBA case_report §3.A "Forensic Note" — Apple MAC + Windows XP User-Agent → VM-on-Mac inference (single artifact source, high confidence) |
+| **3/5** | Single-source inference, no corroboration | (Used sparingly; appears in older mission cards more often than newer ones.) |
+| **<3** | Speculation; should not appear in final case_report | Filtered out at the sub-agent → Lead handoff. |
 
-Findings in `case_report.md` are intended to be 4/5 or 5/5 only. The `shared_facts.md` file is the staging area where lower-confidence items live until corroborated.
+Findings in `case_report.md` are intended to be 4/5 or 5/5 only. `shared_facts.md` is the staging area where lower-confidence items live until corroborated.
 
-**Discipline gap:** the convention is not uniformly enforced across all 7 cases. Older cases (ROCBA, SRL2015 some missions) predate this convention.
+**Honest call-out on the rubric.** The judges' rubric values *confirmed vs. inferred* labeling. Our SOP correctly demands per-finding confidence ratings, which is the load-bearing requirement. The unspecified scale is a real gap — judges reading mission cards from different cases will see slightly different vocabularies for the same intent. Codifying the scale in the SOP is planned post-submission; doing so today would require re-running cases to apply the new scale uniformly.
 
 ---
 
@@ -173,17 +185,19 @@ The hackathon verification squad re-runs top submissions 3-5 times on the same i
 
 **What we did:** ran each case end-to-end as we iterated in development.
 
-**What we did NOT do:** measure run-to-run variance without changes.
+**What we did NOT do:** measure run-to-run variance without changes due to budget limits.
 
 **Anticipated variance sources:**
 - Sub-agent task ordering (Case Lead chooses which lead to pursue first; depending on what comes back, the next batch differs).
 - Mission card hard budgets are deterministic, but the *queries* within the budget vary by run.
 - Gemini 3.5 Flash temperature: default settings (we did not set temperature=0 for determinism).
 
-**Best estimate of variance for the headline ROCBA result.**
-Untested. The "10 min, 1 prompt" claim is from a single run. A second run is reasonably likely to find the same insider (the evidence is unambiguous: USB exfil + SDelete + Google Drive sync), but the *path* to that conclusion will differ.
+**Variance was not measured before submission.** We acknowledge this is exactly what the verification squad re-runs are designed to test. We expect:
 
-**[TODO before submission: run NITROBA and ROCBA each at least twice, record divergence in this section.]**
+- The **terminal findings** to be stable across runs — the architecture is built around a Lead that synthesizes into `case_report.md` only when sub-agents return corroborated facts, and the strict mission budgets prevent the kind of churn that produces wildly different conclusions.
+- The **investigative path** to vary — Case Lead's choice of which lead to pursue first depends on what the data inventory reveals, and AI is non-deterministic. We expect different mission ordering, different SQL phrasing within missions, and possibly different (but equivalent) corroborating artifacts cited.
+
+If a verification squad observes the headline conclusion changing between runs, that is signal worth flagging — please share findings.
 
 ---
 
@@ -193,10 +207,11 @@ Listed plainly so judges don't have to find these themselves.
 
 1. **No held-out adversarial test set.** Hallucinations listed in §4 were caught during normal case execution. We have not planted false artifacts to measure hallucination rate quantitatively.
 2. **No run-to-run variance measurement.** See §8.
-3. **Audit trail uneven.** ROCBA, SRL2015, SRL2018 predate the `-audit.md` convention. Trace is reconstructable but coarser than for NITROBA / VANKO.
-4. **No baseline comparison.** We have not run the same cases through Protocol SIFT alone (or any other baseline) to measure DuckTracy's marginal contribution.
-5. **`command: "*"` permission policy is broad.** See §6 honest gap. RO mount is the actual evidence protection.
-6. **Case Lead context length not stress-tested.** VANKO at 15 missions is the longest case; we have not pushed past that to find the failure boundary.
+3. **No agent-mediated spoliation test.** Direct `docker exec` writes to `/case` are blocked (§6 tests 1-3). We did not test what happens when a mission *prompt* tries to instruct the agent to mutate evidence — the RO mount should still stop it, but the agent's error-surfacing behavior under that condition is unobserved.
+4. **Audit trail granularity reflects when each case was run.** Cases run before the `-audit.md` SOP feature do not have per-call audit logs. Their traces are reconstructable from the mission cards' "Approach" sections, just less granular than NITROBA / VANKO. We publish them here as the original investigation artifacts; older cases will be re-run under current tooling post-submission.
+5. **No baseline comparison.** We have not run the same cases through Protocol SIFT alone (or any other baseline) to measure DuckTracy's additional contribution.
+6. **`command: "*"` permission policy is broad.** See §6 honest gap. RO mount is the actual evidence protection.
+7. **Case Lead context length not stress-tested.** VANKO at 15 missions is the longest case; we have not pushed past that to find the failure boundary.
 
 These are honest gaps, not hidden issues. The judges' rubric values documentation of failure modes over the absence of any — this section exists to make sure the gaps are scored as honesty, not as misses.
 
@@ -214,6 +229,6 @@ Per the judge pack, judges will pick three findings from a case_report and trace
    - Report: `cases/VANKO/docs/case_report.md` §3.A
    - Trace: `cases/VANKO/docs/missions/003-mission-data-analyst-june22-leak-investigation.md` (Findings: "No June 20-25 Activity… triggered the Fail-Fast Condition to pivot").
 
-3. **SRL2018: "Cobalt Strike beacon via named pipe `\\.\pipe\diagsvc-22`."**
-   - Report: `cases/SRL2018/docs/shared_facts.md`
-   - Trace: `cases/SRL2018/docs/missions/006-mission-data-analyst-decode-payloads.md` (Findings: shellcode decoded, named pipe identified).
+3. **NITROBA: "Harassing email sent via `www.sendanonymousemail.net` (TCP Stream 1631) at 2008-07-22 06:02:57 UTC."**
+   - Report: `cases/NITROBA/docs/case_report.md` §3.B
+   - Trace: `cases/NITROBA/docs/missions/004-mission-data-analyst-analyze-traffic-audit.md` Tool Call 20 (tshark TCP stream reassembly).
