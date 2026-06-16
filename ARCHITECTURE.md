@@ -4,7 +4,7 @@
 - **Hackathon tracks:** spans #1 (Direct Agent Extension) and #3 (Multi-Agent Frameworks)
 - **Goals:** Speed plus AI creativity while enforcing forensic integrity
 
-> **Where this runs:** directly on the analyst's host — *not* inside the SIFT VM. Docker is used only for the subset of SIFT tools that need Linux/amd64. This deliberately combines the best of both worlds: SIFT's breadth of tools while taking advantage of native Apple Silicon performance, DuckDB's in-process query speed, and modern data-science formats (Parquet).
+> **Where this runs:** directly on the analyst's host — *not* inside the SIFT VM. Docker is used for access to the wide variety of SIFT tools. This deliberately combines the best of both worlds: SIFT's breadth of tools while taking advantage of native Apple Silicon performance, DuckDB's in-process query speed, and modern data-science formats (Parquet).
 
 ## Diagram
 
@@ -40,6 +40,7 @@ flowchart TB
     end
 
     HELP["query_parquet.py · ioc_tracker.py<br/>(agent-facing CLIs)"]
+    MCPFS["mcp_filesystem.py<br/>MCP server · <b>Case Lead only</b><br/>binary-aware file listing"]
 
     subgraph BB["📋 Shared Brain (Blackboard) — files on disk"]
       direction LR
@@ -50,6 +51,7 @@ flowchart TB
     end
   end
   class HOST,AG,LEAD arch
+  class MCPFS arch
   class BB,CR,SH,IOC,MC prompt
 
   subgraph DATA["🗄️  DuckDB / Parquet  —  in-process · no server · native arm64"]
@@ -83,6 +85,7 @@ flowchart TB
   SF -- "docker exec" --> SIFT
 
   LEAD -- "patch/write" --> CR
+  LEAD -- "list_directory · read" --> MCPFS
   DA -- "track_ioc" --> IOC
   SF -- "track_ioc" --> IOC
   DA -- "updates" --> SH
@@ -122,8 +125,8 @@ The hackathon brief asks specifically that architectural enforcement and prompt-
 The hackathon's reference architecture appears to assume everything runs inside the SIFT VM. DuckTracy intentionally inverts this:
 
 1. **Speed.** DuckDB in-process on Apple Silicon processes millions of forensic events in milliseconds. The same workload inside the SIFT VM is slower by an order of magnitude.
-2. **Data-science substrate.** Parquet + DuckDB lets AI agents query in SQL — a language they already know fluently — instead of learning a bespoke MCP tool surface.
+2. **Data-science substrate.** Parquet + DuckDB lets sub-agents query forensic data in SQL — a language they already know fluently — instead of learning a bespoke MCP tool surface. The Case Lead retains a small custom MCP filesystem server (`helpers/mcp_filesystem.py`) purely so it can see binary case artifacts (Parquet files, disk images) that forge's default file-search tools skip; nothing forensic happens through MCP.
 3. **Containment by isolation, not by VM.** Source images are protected by a read-only Docker mount, not by VM-level segregation. The Docker boundary is sufficient for evidence integrity and lighter than a full VM.
 4. **SIFT toolset preserved.** The SIFT container still provides Sleuthkit, Plaso, but adds new utilities such as the Dissect series of target-query, etc. Agents reach them via `docker exec` and consistently rate the interaction as "feeling native."
 
-This architecture is the project's central design thesis. The agent's preference for SQL + native shell over MCP was validated through per-iteration agent NPS feedback.
+This architecture is the project's central design thesis. Sub-agents' preference for SQL + native shell over MCP was validated through per-iteration agent NPS feedback; the Case Lead's narrow MCP filesystem server exists purely to compensate for forge's default tools ignoring binary files.
