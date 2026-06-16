@@ -1,0 +1,28 @@
+# Forensic Audit Trail: Initial Data Inventory
+
+## 1. Initial Prompt & Parameters
+- **Mission:** Read the mission card at `/Users/jeffbryner/development/find_evil_hackathon/cases/ROCBA/docs/missions/001-mission-data-analyst-data-inventory.md`. Execute the `shared-facts-sop` and `delegating-mission-cards-sop` skills. Then, perform the data inventory task on the parquet files in `cases/ROCBA/scratch/rocba-cdrive.e01/parquet/` and `cases/ROCBA/scratch/rocba-memory.raw/parquet/` to find their row counts and temporal ranges. Update `cases/ROCBA/docs/shared_facts.md` and the mission card with your findings, and write the audit log.
+- **Budgets:**
+  - Orientation Budget: 5 tool calls
+  - Execution Budget: 10 tool calls
+  - Reporting Budget: 5 tool calls
+  - Proactive Self-Termination: Tool call 16 (80% of total budget)
+  - Fail-Fast Condition: If parquet files cannot be queried/found within 3 tool calls, stop and report.
+
+## 2. Chronological Tool Execution Log
+- **Tool Call #1:** `read` on `/Users/jeffbryner/development/find_evil_hackathon/cases/ROCBA/docs/missions/001-mission-data-analyst-data-inventory.md` -> *Outcome: Successfully read the mission card, identified targets, checklists, and budgets.*
+- **Tool Call #2:** `skill` with `shared-facts-sop` -> *Outcome: Loaded standard operating procedure for maintaining centralized case knowledge.*
+- **Tool Call #3:** `skill` with `delegating-mission-cards-sop` -> *Outcome: Loaded standard operating procedure for mission card management and forensic audit trails.*
+- **Tool Call #4:** `fs_search` with glob `*.parquet` -> *Outcome: Attempted to search for parquet files in the workspace (no results due to path constraints).*
+- **Tool Call #5:** `fs_search` with glob `**/*.parquet` -> *Outcome: Attempted recursive search for parquet files in the workspace (no results due to path constraints).*
+- **Tool Call #6:** `shell` with command `ls -la cases/ROCBA/scratch/` -> *Outcome: Verified that `rocba-cdrive.e01` and `rocba-memory.raw` exist under the scratch directory.*
+- **Tool Call #7:** `shell` with command `ls -la cases/ROCBA/scratch/rocba-cdrive.e01/ && ls -la cases/ROCBA/scratch/rocba-memory.raw/` -> *Outcome: Verified that `parquet` folders exist in both image extraction directories.*
+- **Tool Call #8:** `shell` with command `ls -la cases/ROCBA/scratch/rocba-cdrive.e01/parquet/ && ls -la cases/ROCBA/scratch/rocba-memory.raw/parquet/` -> *Outcome: Identified the exact Parquet files available for analysis: `artifacts_timeline.parquet`, `browser_history.parquet`, `fs_timeline.parquet` under `rocba-cdrive.e01`, and `memory_netscan.parquet`, `memory_pslist.parquet`, `memory_timeliner.parquet` under `rocba-memory.raw`.*
+- **Tool Call #9:** `shell` with command `uv run helpers/query_parquet.py --help` -> *Outcome: Displayed help instructions and arguments for the parquet query utility.*
+- **Tool Call #10:** `shell` with command `uv run helpers/query_parquet.py --case ROCBA --schema` -> *Outcome: Retrieved schema definitions for all 6 available parquet tables.*
+- **Tool Call #11:** `shell` with command `uv run helpers/query_parquet.py --case ROCBA --query "SELECT 'memory_pslist' AS tbl, count(*) AS cnt, CAST(min(CreateTime) AS TIMESTAMP) AS min_ts, CAST(max(CreateTime) AS TIMESTAMP) AS max_ts FROM memory_pslist UNION ALL SELECT 'memory_netscan' AS tbl, count(*) AS cnt, CAST(min(Created) AS TIMESTAMP) AS min_ts, CAST(max(Created) AS TIMESTAMP) AS max_ts FROM memory_netscan UNION ALL SELECT 'memory_timeliner' AS tbl, count(*) AS cnt, CAST(min(\"Created Date\") AS TIMESTAMP) AS min_ts, CAST(max(\"Created Date\") AS TIMESTAMP) AS max_ts FROM memory_timeliner UNION ALL SELECT 'artifacts_timeline' AS tbl, count(*) AS cnt, CAST(min(timestamp) AS TIMESTAMP) AS min_ts, CAST(max(timestamp) AS TIMESTAMP) AS max_ts FROM artifacts_timeline UNION ALL SELECT 'fs_timeline' AS tbl, count(*) AS cnt, CAST(min(timestamp) AS TIMESTAMP) AS min_ts, CAST(max(timestamp) AS TIMESTAMP) AS max_ts FROM fs_timeline UNION ALL SELECT 'browser_history' AS tbl, count(*) AS cnt, CAST(min(ts) AS TIMESTAMP) AS min_ts, CAST(max(ts) AS TIMESTAMP) AS max_ts FROM browser_history"` -> *Outcome: Retrieved row counts and absolute temporal ranges for all 6 tables.*
+- **Tool Call #12:** `shell` with command `uv run helpers/query_parquet.py --case ROCBA --query "SELECT 'memory_timeliner' AS tbl, count(*) AS cnt, CAST(min(\"Created Date\") AS TIMESTAMP) AS min_ts, CAST(max(\"Created Date\") AS TIMESTAMP) AS max_ts FROM memory_timeliner WHERE \"Created Date\" >= '2020-01-01' AND \"Created Date\" <= '2021-01-01' UNION ALL SELECT 'artifacts_timeline' AS tbl, count(*) AS cnt, CAST(min(timestamp) AS TIMESTAMP) AS min_ts, CAST(max(timestamp) AS TIMESTAMP) AS max_ts FROM artifacts_timeline WHERE timestamp >= '2020-01-01' AND timestamp <= '2021-01-01' UNION ALL SELECT 'fs_timeline' AS tbl, count(*) AS cnt, CAST(min(timestamp) AS TIMESTAMP) AS min_ts, CAST(max(timestamp) AS TIMESTAMP) AS max_ts FROM fs_timeline WHERE timestamp >= '2020-01-01' AND timestamp <= '2021-01-01'"` -> *Outcome: Filtered out outlier epoch/future timestamps and established the active investigation window for 2020.*
+- **Tool Call #13:** `read` on `/Users/jeffbryner/development/find_evil_hackathon/cases/ROCBA/docs/shared_facts.md` -> *Outcome: Loaded the current shared facts template.*
+- **Tool Call #14:** `patch` on `/Users/jeffbryner/development/find_evil_hackathon/cases/ROCBA/docs/shared_facts.md` -> *Outcome: Successfully updated `# Data Inventory` in `shared_facts.md` with detailed table row counts and temporal ranges.*
+
+*(Note: The final tool calls used to write the audit trail and update the mission card are excluded from this log per the Recursive Audit Exclusion Rule.)*
