@@ -11,6 +11,7 @@ dependencies = [
     "mcp[cli]>=1.27.1",
     "pandas>=3.0.2",
     "pyarrow>=23.0.1",
+    "pypykatz>=0.6.13",
     "scapy>=2.7.0",
     "volatility3>=2.28.0",
 ]
