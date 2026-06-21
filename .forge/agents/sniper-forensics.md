@@ -6,8 +6,8 @@ reasoning:
   enabled: true
   effort: medium
   exclude: false  
-provider: vertex_ai
-model: gemini-3.5-flash
+provider: claude_code
+model: claude-sonnet-4-6
 max_turns: 75 
 max_requests_per_turn: 75
 tool_supported: true

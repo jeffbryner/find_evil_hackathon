@@ -6,8 +6,8 @@ reasoning:
   enabled: true
   effort: max
   exclude: false
-provider: vertex_ai
-model: gemini-3.5-flash
+provider: claude_code
+model: claude-opus-4-8
 tools: 
   - followup
   - fs_search
