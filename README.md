@@ -141,8 +141,15 @@ We purposefully build a pipeline for artifacts to go from raw form to .parquet f
   provider: vertex_ai
   model: gemini-3.5-flash
   ```
+  Example for claude code
+  ```
+  provider: claude_code
+  model: claude-sonnet-4-6
+  ```
+  NOTE: You can mix and match any model from any provider for any agent. i.e. You can have an opus lead, a sonnet data agent and a gemini sniper forensics agent, etc. This allows you flexibility to choose new models as they arrive, or as your budget allows.
 
-- Create a directory to hold your case images: `mkdir -p ./cases/<CASE_ID>/images`
+
+- Next create a directory to hold your case images: `mkdir -p ./cases/<CASE_ID>/images`
 - Copy in your disk/memory images (by convention `<hostname-disc|memory>.<filetype>` ) 
     - Where filetype is .E01 for expert witness files, .img for memory images, .dd or .raw for raw images. 
     - Files without the word `memory` in the name will be considered disk images and mounted. 
