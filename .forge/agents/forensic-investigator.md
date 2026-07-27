@@ -7,7 +7,7 @@ reasoning:
   effort: max
   exclude: false
 provider: claude_code
-model: claude-fable-5
+model: claude-opus-5
 tools: 
   - followup
   - fs_search
